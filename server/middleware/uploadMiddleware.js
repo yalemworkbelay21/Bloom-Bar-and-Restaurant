@@ -1,22 +1,11 @@
 const multer = require('multer');
 const path   = require('path');
-const fs     = require('fs');
 
-// ── Ensure uploads directory exists ───────────────────────────────────
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// ── Storage engine ─────────────────────────────────────────────────────
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename:    (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `receipt-${uniqueSuffix}${ext}`);
-  },
-});
+// ── Memory storage ─────────────────────────────────────────────────────
+// Uses memoryStorage so incoming file buffers can be uploaded directly to
+// MongoDB Atlas GridFS. This guarantees files are permanently preserved
+// across container restarts, deploys, and server reboots on cloud platforms.
+const storage = multer.memoryStorage();
 
 const fileFilter = (_req, file, cb) => {
   const allowed = /jpeg|jpg|png|gif|pdf|webp/i;
@@ -31,7 +20,7 @@ const fileFilter = (_req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
 });
 
 module.exports = upload;

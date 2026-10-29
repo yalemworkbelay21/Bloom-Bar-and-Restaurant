@@ -32,7 +32,9 @@ import {
   Printer,
   ChevronDown,
   UploadCloud,
+  Loader2,
 } from 'lucide-react';
+import { formatAttachmentUrl, isImageAttachment, isPdfAttachment } from '../utils/attachmentUtils';
 import {
   ResponsiveContainer,
   BarChart,
@@ -206,7 +208,7 @@ function printVoucher(voucher, formatETB) {
         <div class="field"><div class="lbl">Recorded At</div><div class="val">${createdAt}</div></div>
       </div>
       ${voucher.notes ? `<div class="notes-lbl">Notes / Purpose</div><div class="notes-box">${voucher.notes}</div>` : ''}
-      ${voucher.receiptUrl ? `<div style="margin-top:14px"><div class="notes-lbl">Attached Receipt</div><img src="${voucher.receiptUrl}" alt="Receipt" class="receipt-img"/></div>` : ''}
+      ${voucher.receiptUrl ? `<div style="margin-top:14px"><div class="notes-lbl">Attached Receipt</div><img src="${formatAttachmentUrl(voucher.receiptUrl)}" alt="Receipt" class="receipt-img"/></div>` : ''}
     </div>
     <div class="footer">Bloom Bar and Restaurant  Café &middot; ${voucherId} &middot; Printed ${new Date().toLocaleString()}</div>
   </div>
@@ -267,6 +269,8 @@ export default function Expenses() {
   // Detail / Voucher Modal
   const [voucherModalOpen, setVoucherModalOpen] = useState(false);
   const [activeVoucher, setActiveVoucher] = useState(null);
+  const [voucherImgError, setVoucherImgError] = useState(false);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -454,12 +458,13 @@ export default function Expenses() {
     }
   };
 
-  // Upload receipt image
+  // Upload receipt image or PDF
   const handleReceiptUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const uploadForm = new FormData();
     uploadForm.append('files', file);
+    setUploadingReceipt(true);
     try {
       const res = await api.post('/upload', uploadForm, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -469,6 +474,9 @@ export default function Expenses() {
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Receipt upload failed');
+    } finally {
+      setUploadingReceipt(false);
+      e.target.value = '';
     }
   };
 
@@ -972,6 +980,7 @@ export default function Expenses() {
                           <button
                             onClick={() => {
                               setActiveVoucher(exp);
+                              setVoucherImgError(false);
                               setVoucherModalOpen(true);
                             }}
                             title="View Voucher & Receipt"
@@ -1151,45 +1160,64 @@ export default function Expenses() {
               />
             </div>
 
-            {/* Receipt Image Attachment */}
+            {/* Receipt Image / PDF Attachment */}
             <div>
               <label className="block text-xs font-bold text-ink-800 mb-1">
                 Receipt Attachment (Optional)
               </label>
               {formData.receiptUrl ? (
-                <div className="flex items-center gap-3 p-2 rounded-xl bg-blue-50 border border-blue-200">
-                  <img
-                    src={formData.receiptUrl}
-                    alt="Receipt"
-                    className="h-12 w-12 object-cover rounded-lg border"
-                  />
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-blue-50/80 border border-blue-200">
+                  {isPdfAttachment(formData.receiptUrl) ? (
+                    <span className="h-12 w-12 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                      <FileText size={20} />
+                    </span>
+                  ) : (
+                    <img
+                      src={formatAttachmentUrl(formData.receiptUrl)}
+                      alt="Receipt"
+                      className="h-12 w-12 object-cover rounded-lg border border-blue-200 bg-white"
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-blue-900 truncate">Receipt uploaded</p>
+                    <p className="text-xs font-semibold text-blue-900 truncate">
+                      {isPdfAttachment(formData.receiptUrl) ? 'PDF Receipt attached' : 'Receipt image attached'}
+                    </p>
                     <a
-                      href={formData.receiptUrl}
+                      href={formatAttachmentUrl(formData.receiptUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-blue-600 underline"
+                      className="text-[11px] text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1 mt-0.5"
                     >
-                      View full image
+                      <Eye size={11} /> View file
                     </a>
                   </div>
                   <button
                     type="button"
                     onClick={() => setFormData((p) => ({ ...p, receiptUrl: '' }))}
-                    className="text-red-500 hover:text-red-700 p-1"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-100 p-1.5 rounded-lg transition"
+                    title="Remove receipt"
                   >
                     <X size={15} />
                   </button>
                 </div>
               ) : (
-                <label className="flex items-center justify-center gap-2 border-2 border-dashed border-ink-200 hover:border-blue-400 hover:bg-blue-50/30 rounded-xl p-3 cursor-pointer text-xs text-ink-500 transition">
-                  <UploadCloud size={16} className="text-blue-500" />
-                  <span>Upload receipt image / photo</span>
+                <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-ink-200 hover:border-blue-400 hover:bg-blue-50/30 rounded-xl p-3.5 cursor-pointer text-xs text-ink-500 transition ${uploadingReceipt ? 'opacity-60 pointer-events-none' : ''}`}>
+                  {uploadingReceipt ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin text-blue-600" />
+                      <span className="text-blue-700 font-semibold">Uploading to permanent storage...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud size={16} className="text-blue-500" />
+                      <span>Upload receipt photo or PDF (saved permanently)</span>
+                    </>
+                  )}
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf"
                     onChange={handleReceiptUpload}
+                    disabled={uploadingReceipt}
                     className="hidden"
                   />
                 </label>
@@ -1309,19 +1337,70 @@ export default function Expenses() {
               {/* Receipt Preview if any */}
               {activeVoucher.receiptUrl && (
                 <div className="text-xs pt-2">
-                  <p className="text-ink-400 font-medium mb-1">Attached Receipt</p>
-                  <a
-                    href={activeVoucher.receiptUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <img
-                      src={activeVoucher.receiptUrl}
-                      alt="Receipt"
-                      className="max-h-48 w-full object-contain rounded-xl border border-ink-200 bg-ink-50"
-                    />
-                  </a>
+                  <p className="text-ink-400 font-medium mb-1.5">Attached Receipt</p>
+                  {isPdfAttachment(activeVoucher.receiptUrl) ? (
+                    <div className="flex items-center justify-between p-3 rounded-xl border border-rose-200 bg-rose-50/60">
+                      <div className="flex items-center gap-2.5">
+                        <FileText size={20} className="text-rose-600 shrink-0" />
+                        <div>
+                          <p className="font-semibold text-rose-950">PDF Receipt Document</p>
+                          <p className="text-[11px] text-rose-700">Click to view or download</p>
+                        </div>
+                      </div>
+                      <a
+                        href={formatAttachmentUrl(activeVoucher.receiptUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition"
+                      >
+                        <Eye size={12} /> Open PDF
+                      </a>
+                    </div>
+                  ) : voucherImgError ? (
+                    <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-900">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                        <div className="space-y-1">
+                          <p className="font-semibold text-xs">Receipt file unavailable on server</p>
+                          <p className="text-[11px] text-amber-800 leading-relaxed">
+                            This receipt was uploaded during an older cloud session prior to persistent database storage. Please edit this expense to re-attach the receipt for permanent cloud storage.
+                          </p>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVoucherModalOpen(false);
+                                openEditModal(activeVoucher);
+                              }}
+                              className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-900 underline hover:text-black"
+                            >
+                              <Edit2 size={11} /> Re-upload receipt now
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <a
+                        href={formatAttachmentUrl(activeVoucher.receiptUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block group relative"
+                        title="Click to view full receipt in new tab"
+                      >
+                        <img
+                          src={formatAttachmentUrl(activeVoucher.receiptUrl)}
+                          alt="Receipt"
+                          onError={() => setVoucherImgError(true)}
+                          className="max-h-56 w-full object-contain rounded-xl border border-ink-200 bg-ink-50 hover:opacity-95 transition"
+                        />
+                        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/70 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-xs group-hover:bg-black/90">
+                          <Eye size={10} /> Open full size
+                        </span>
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

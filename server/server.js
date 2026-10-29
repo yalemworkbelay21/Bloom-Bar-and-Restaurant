@@ -42,14 +42,22 @@ const autoSeed = async () => {
   }
 };
 
+const { migrateLocalUploads } = require('./services/gridfsService');
+
 connectDB()
-  .then(() => autoSeed())
+  .then(async () => {
+    await autoSeed();
+    await migrateLocalUploads();
+  })
   .catch((err) => {
     console.error('[DB] Startup connect error:', err.message);
     global.mongoConnectionError = err.message;
   });
 
 const app = express();
+
+// Trust reverse proxy (Aletcloud, Render, Heroku, Cloudflare, Nginx) so req.protocol and req.ip are accurate
+app.set('trust proxy', 1);
 
 // PNA (Private Network Access) & CORS middleware: Allows cloud-hosted browser apps
 // to communicate with local POS printer bridge on 127.0.0.1 / localhost seamlessly.

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Paperclip, UploadCloud, X, FileText, Image, Loader2, Eye, Trash2, Camera } from 'lucide-react';
+import { Paperclip, UploadCloud, X, FileText, Image, Loader2, Eye, Trash2, Camera, AlertCircle } from 'lucide-react';
 import api from '../../api/axios';
+import { formatAttachmentUrl, isImageAttachment, isPdfAttachment } from '../../utils/attachmentUtils';
 
 export default function AttachmentUploader({ attachments = [], onAttachmentsChange, disabled = false }) {
   const inputRef   = useRef(null);
@@ -8,9 +9,7 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver]  = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
-
-  const isImage = (mimeType = '', url = '') =>
-    /image\/(jpeg|jpg|png|gif|webp)/i.test(mimeType) || /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+  const [failedImages, setFailedImages] = useState({});
 
   const uploadFiles = async (files) => {
     if (!files || files.length === 0) return;
@@ -44,6 +43,10 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
     onAttachmentsChange(attachments.filter((_, i) => i !== idx));
   };
 
+  const handleImgError = (idx) => {
+    setFailedImages((prev) => ({ ...prev, [idx]: true }));
+  };
+
   return (
     <div className="space-y-3">
       {/* Drop Zone */}
@@ -61,7 +64,7 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
         {uploading ? (
           <>
             <Loader2 size={22} className="animate-spin text-blue-500" />
-            <p className="text-xs text-blue-700 font-medium">Uploading…</p>
+            <p className="text-xs text-blue-700 font-medium">Uploading to cloud storage…</p>
           </>
         ) : (
           <>
@@ -69,7 +72,7 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
             <div>
               <p className="text-xs font-semibold text-ink-700">Upload Receipt / Invoice</p>
               <p className="text-[11px] text-ink-400 mt-0.5">
-                JPG, PNG, PDF up to 10 MB · Drag &amp; drop or click
+                JPG, PNG, PDF up to 10 MB · Permanent cloud storage
               </p>
             </div>
 
@@ -125,57 +128,71 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
       {/* Attachment List */}
       {attachments.length > 0 && (
         <div className="space-y-1.5">
-          {attachments.map((att, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-2.5 rounded-lg border border-ink-100 bg-white px-3 py-2 shadow-xs text-xs"
-            >
-              {/* Thumbnail or icon */}
-              {isImage(att.mimeType, att.url) ? (
-                <img
-                  src={att.url}
-                  alt={att.name}
-                  className="h-9 w-9 rounded-md object-cover border border-ink-100 shrink-0 cursor-pointer"
-                  onClick={() => setPreviewUrl(att.url)}
-                />
-              ) : (
-                <span className="h-9 w-9 rounded-md bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
-                  <FileText size={16} className="text-red-500" />
-                </span>
-              )}
+          {attachments.map((att, idx) => {
+            const safeUrl = formatAttachmentUrl(att.url);
+            const isImg = isImageAttachment(safeUrl, att.mimeType) && !failedImages[idx];
+            const isPdf = isPdfAttachment(safeUrl, att.mimeType);
 
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-ink-800 truncate">{att.name || 'Receipt'}</p>
-                {att.size > 0 && (
-                  <p className="text-ink-400">{(att.size / 1024).toFixed(1)} KB</p>
+            return (
+              <div
+                key={idx}
+                className="flex items-center gap-2.5 rounded-lg border border-ink-100 bg-white px-3 py-2 shadow-xs text-xs"
+              >
+                {/* Thumbnail or icon */}
+                {isImg ? (
+                  <img
+                    src={safeUrl}
+                    alt={att.name || 'Receipt'}
+                    onError={() => handleImgError(idx)}
+                    className="h-9 w-9 rounded-md object-cover border border-ink-100 shrink-0 cursor-pointer hover:opacity-80 transition"
+                    onClick={() => setPreviewUrl(safeUrl)}
+                  />
+                ) : isPdf ? (
+                  <span className="h-9 w-9 rounded-md bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+                    <FileText size={16} className="text-rose-500" />
+                  </span>
+                ) : (
+                  <span className="h-9 w-9 rounded-md bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+                    <AlertCircle size={16} className="text-amber-500" />
+                  </span>
                 )}
-              </div>
 
-              <div className="flex items-center gap-1 shrink-0">
-                {/* Preview / open */}
-                <a
-                  href={att.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Open"
-                  className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-700 transition"
-                >
-                  <Eye size={13} />
-                </a>
-                {/* Remove */}
-                {!disabled && (
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(idx)}
-                    title="Remove"
-                    className="p-1.5 rounded-md text-ink-400 hover:bg-red-50 hover:text-red-600 transition"
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-ink-800 truncate">{att.name || 'Receipt'}</p>
+                  {att.size > 0 && (
+                    <p className="text-ink-400">{(att.size / 1024).toFixed(1)} KB</p>
+                  )}
+                  {failedImages[idx] && (
+                    <p className="text-[10px] text-amber-600">Old file unavailable on server</p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  {/* Preview / open */}
+                  <a
+                    href={safeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open in new tab"
+                    className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-700 transition"
                   >
-                    <Trash2 size={13} />
-                  </button>
-                )}
+                    <Eye size={13} />
+                  </a>
+                  {/* Remove */}
+                  {!disabled && (
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(idx)}
+                      title="Remove"
+                      className="p-1.5 rounded-md text-ink-400 hover:bg-red-50 hover:text-red-600 transition"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -196,7 +213,7 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
             <img
               src={previewUrl}
               alt="Receipt preview"
-              className="max-h-[85vh] max-w-full rounded-xl shadow-2xl object-contain"
+              className="max-h-[85vh] max-w-full rounded-xl shadow-2xl object-contain bg-white"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -209,9 +226,7 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
 // ── AttachmentViewer (read-only list shown in detail modals) ──────────
 export function AttachmentViewer({ attachments = [] }) {
   const [previewUrl, setPreviewUrl] = useState(null);
-
-  const isImage = (mimeType = '', url = '') =>
-    /image\/(jpeg|jpg|png|gif|webp)/i.test(mimeType) || /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+  const [failedImages, setFailedImages] = useState({});
 
   if (!attachments || attachments.length === 0) {
     return (
@@ -219,41 +234,59 @@ export function AttachmentViewer({ attachments = [] }) {
     );
   }
 
+  const handleImgError = (idx) => {
+    setFailedImages((prev) => ({ ...prev, [idx]: true }));
+  };
+
   return (
     <>
       <div className="space-y-1.5">
-        {attachments.map((att, idx) => (
-          <div
-            key={idx}
-            className="flex items-center gap-2.5 rounded-lg border border-ink-100 bg-ink-50 px-3 py-2 text-xs"
-          >
-            {isImage(att.mimeType, att.url) ? (
-              <img
-                src={att.url}
-                alt={att.name}
-                className="h-9 w-9 rounded-md object-cover border border-ink-100 shrink-0 cursor-pointer"
-                onClick={() => setPreviewUrl(att.url)}
-              />
-            ) : (
-              <span className="h-9 w-9 rounded-md bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
-                <FileText size={16} className="text-red-500" />
-              </span>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-ink-800 truncate">{att.name || 'Receipt'}</p>
-              {att.size > 0 && <p className="text-ink-400">{(att.size / 1024).toFixed(1)} KB</p>}
-            </div>
-            <a
-              href={att.url}
-              target="_blank"
-              rel="noreferrer"
-              className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-blue-600 transition"
-              title="Open in new tab"
+        {attachments.map((att, idx) => {
+          const safeUrl = formatAttachmentUrl(att.url);
+          const isImg = isImageAttachment(safeUrl, att.mimeType) && !failedImages[idx];
+          const isPdf = isPdfAttachment(safeUrl, att.mimeType);
+
+          return (
+            <div
+              key={idx}
+              className="flex items-center gap-2.5 rounded-lg border border-ink-100 bg-ink-50 px-3 py-2 text-xs"
             >
-              <Eye size={13} />
-            </a>
-          </div>
-        ))}
+              {isImg ? (
+                <img
+                  src={safeUrl}
+                  alt={att.name || 'Receipt'}
+                  onError={() => handleImgError(idx)}
+                  className="h-9 w-9 rounded-md object-cover border border-ink-100 shrink-0 cursor-pointer hover:opacity-80 transition"
+                  onClick={() => setPreviewUrl(safeUrl)}
+                />
+              ) : isPdf ? (
+                <span className="h-9 w-9 rounded-md bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+                  <FileText size={16} className="text-rose-500" />
+                </span>
+              ) : (
+                <span className="h-9 w-9 rounded-md bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+                  <AlertCircle size={16} className="text-amber-500" />
+                </span>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-ink-800 truncate">{att.name || 'Receipt'}</p>
+                {att.size > 0 && <p className="text-ink-400">{(att.size / 1024).toFixed(1)} KB</p>}
+                {failedImages[idx] && (
+                  <p className="text-[10px] text-amber-600">Old file unavailable on server</p>
+                )}
+              </div>
+              <a
+                href={safeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-blue-600 transition"
+                title="Open in new tab"
+              >
+                <Eye size={13} />
+              </a>
+            </div>
+          );
+        })}
       </div>
 
       {previewUrl && (
@@ -272,7 +305,7 @@ export function AttachmentViewer({ attachments = [] }) {
             <img
               src={previewUrl}
               alt="Receipt preview"
-              className="max-h-[85vh] max-w-full rounded-xl shadow-2xl object-contain"
+              className="max-h-[85vh] max-w-full rounded-xl shadow-2xl object-contain bg-white"
               onClick={(e) => e.stopPropagation()}
             />
           </div>

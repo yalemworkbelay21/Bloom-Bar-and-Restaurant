@@ -65,13 +65,19 @@ function isLaserPrinter(printer = {}) {
   const laserBrands = ['hp', 'lexmark', 'brother', 'samsung', 'xerox', 'canon', 'ricoh', 'kyocera', 'konica', 'sharp'];
   const brand = String(printer.brand || '').toLowerCase();
   const model = String(printer.model || '').toLowerCase();
+  const name = String(printer.name || '').toLowerCase();
+  const paper = String(printer.paperWidth || '').toLowerCase();
   return laserBrands.some(b => brand.includes(b)) ||
     model.includes('laserjet') ||
     model.includes('laser') ||
     model.includes('m402') ||
     model.includes('m404') ||
     model.includes('m428') ||
-    model.includes('m118');
+    model.includes('m118') ||
+    name.includes('laserjet') ||
+    name.includes('hp') ||
+    paper.includes('laser') ||
+    paper.includes('a4');
 }
 
 function sendRawToPrinter(ip, port, data) {
@@ -355,8 +361,201 @@ async function pollLoop() {
   req.end();
 }
 
+// ── Local Loopback HTTP Bridge (Port 5000) ──────────────────────────────────
+function startLocalServer(port = 5000) {
+  const server = http.createServer((req, res) => {
+    // PNA & CORS headers: enables cloud browser (HTTPS) to call local TCP print bridge
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-otp-token');
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    const parsedUrl = new URL(req.url, `http://${req.headers.host || '127.0.0.1:5000'}`);
+    const pathname = parsedUrl.pathname;
+
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', async () => {
+      let data = {};
+      try { data = JSON.parse(body || '{}'); } catch (_) {}
+
+      res.setHeader('Content-Type', 'application/json');
+
+      if (pathname === '/api/printers/action/ping' && req.method === 'POST') {
+        const ip = data.ip || config.defaultPrinterIp;
+        const targetPort = Number(data.port) || config.defaultPrinterPort || 9100;
+        const ok = await checkLocalPrinter(ip, targetPort);
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          ok,
+          via: 'local_tcp',
+          message: ok ? `Connected to ${ip}:${targetPort} via Local TCP` : `Cannot reach ${ip}:${targetPort}`,
+          error: ok ? null : 'Unreachable'
+        }));
+        return;
+      }
+
+      if (pathname === '/api/printers/action/test-page' && req.method === 'POST') {
+        const ip = data.ip || config.defaultPrinterIp;
+        const targetPort = Number(data.port) || config.defaultPrinterPort || 9100;
+        const isHpLaser = isLaserPrinter(data);
+        const rawBytes = isHpLaser
+          ? buildLaserTestPage('Bloom Bar & Restaurant', 'HP LaserJet TCP Print Passed')
+          : buildTestReceipt('Bloom Bar & Restaurant', 'Epson ESC/POS Print Passed');
+
+        try {
+          await sendRawToPrinter(ip, targetPort, rawBytes);
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            ok: true,
+            via: 'local_tcp',
+            message: `✓ Test page printed directly to ${ip}:${targetPort} via Local TCP!`
+          }));
+        } catch (err) {
+          res.writeHead(200);
+          res.end(JSON.stringify({ ok: false, error: err.message }));
+        }
+        return;
+      }
+
+      if (pathname === '/api/printers/action/kot' && req.method === 'POST') {
+        const order = data.order || {};
+        const ip = data.ip || config.defaultPrinterIp;
+        const targetPort = Number(data.port) || config.defaultPrinterPort || 9100;
+        const isHpLaser = isLaserPrinter(data);
+        let kotData;
+        if (isHpLaser) {
+          const PCL_RESET = '\x1bE';
+          const PCL_SETUP = '\x1b&l0O\x1b(s12V\x1b&k2G';
+          const PCL_FF = '\x0c';
+          const lines = [
+            PCL_RESET + PCL_SETUP,
+            '============================================================',
+            '               ** KITCHEN ORDER TICKET **                   ',
+            '============================================================',
+            `Order #: ${order.orderNo || '--'}    Table: ${order.tableNo || '--'}`,
+            `Waiter:  ${order.waiterName || 'Staff'}    Time: ${new Date().toLocaleTimeString('en-ET')}`,
+            '------------------------------------------------------------',
+            ...(order.items || []).map(i => `  x${i.quantity || 1}  ${i.productName || i.name || ''} ${i.notes ? '(' + i.notes + ')' : ''}`),
+            '============================================================',
+            '                 ** PREPARE IMMEDIATELY **                  ',
+            PCL_FF,
+            PCL_RESET
+          ];
+          kotData = Buffer.from(lines.join('\r\n'), 'utf8');
+        } else {
+          const items = (order.items || []).map(i => `  ${i.quantity || 1}x ${i.productName || i.name || ''}`).join('\n');
+          kotData = Buffer.concat([
+            Buffer.from([0x1b, 0x40, 0x1b, 0x61, 0x01, 0x1b, 0x21, 0x30]),
+            Buffer.from('** KITCHEN ORDER **\n', 'latin1'),
+            Buffer.from([0x1b, 0x21, 0x00, 0x1b, 0x45, 0x01]),
+            Buffer.from(`Order #${order.orderNo || '--'}  Table: ${order.tableNo || '--'}\n`, 'latin1'),
+            Buffer.from(`Waiter: ${order.waiterName || 'Staff'}  ${new Date().toLocaleTimeString()}\n`, 'latin1'),
+            Buffer.from('--------------------------------\n', 'latin1'),
+            Buffer.from([0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00]),
+            Buffer.from(items + '\n', 'latin1'),
+            Buffer.from('--------------------------------\n', 'latin1'),
+            Buffer.from([0x1b, 0x64, 0x04, 0x1d, 0x56, 0x00]),
+          ]);
+        }
+        try {
+          await sendRawToPrinter(ip, targetPort, kotData);
+          res.writeHead(200);
+          res.end(JSON.stringify({ ok: true, via: 'local_tcp' }));
+        } catch (err) {
+          res.writeHead(200);
+          res.end(JSON.stringify({ ok: false, error: err.message }));
+        }
+        return;
+      }
+
+      if (pathname === '/api/printers/action/receipt' && req.method === 'POST') {
+        const order = data.order || {};
+        const ip = data.ip || config.defaultPrinterIp;
+        const targetPort = Number(data.port) || config.defaultPrinterPort || 9100;
+        const isHpLaser = isLaserPrinter(data);
+        let receiptData;
+        if (isHpLaser) {
+          const PCL_RESET = '\x1bE';
+          const PCL_SETUP = '\x1b&l0O\x1b(s12V\x1b&k2G';
+          const PCL_FF = '\x0c';
+          const lines = [
+            PCL_RESET + PCL_SETUP,
+            '============================================================',
+            '                 BLOOM BAR & RESTAURANT                     ',
+            '                     CUSTOMER RECEIPT                       ',
+            '============================================================',
+            `Order #: ${order.orderNo || '--'}    Table: ${order.tableNo || '--'}`,
+            `Date:    ${new Date().toLocaleString('en-ET')}`,
+            '------------------------------------------------------------',
+            ...(order.items || []).map(i => `  ${String(i.productName || '').padEnd(30)} x${i.quantity}  ETB ${Number(i.totalPrice || (i.quantity * i.unitPrice) || 0).toFixed(2)}`),
+            '------------------------------------------------------------',
+            `TOTAL: ETB ${Number(order.grandTotal || 0).toFixed(2)}`,
+            '============================================================',
+            '                 Thank you! Come again.                     ',
+            PCL_FF,
+            PCL_RESET
+          ];
+          receiptData = Buffer.from(lines.join('\r\n'), 'utf8');
+        } else {
+          const items = (order.items || []).map(i => `  ${(i.productName || '').padEnd(18).slice(0, 18)} x${i.quantity}  ${Number(i.totalPrice || 0).toFixed(2)}`).join('\n');
+          receiptData = Buffer.concat([
+            Buffer.from([0x1b, 0x40, 0x1b, 0x61, 0x01, 0x1b, 0x21, 0x30]),
+            Buffer.from('BLOOM BAR & RESTAURANT\n', 'latin1'),
+            Buffer.from([0x1b, 0x21, 0x00]),
+            Buffer.from(`Order #${order.orderNo || '--'}  Table: ${order.tableNo || '--'}\n`, 'latin1'),
+            Buffer.from(`Date: ${new Date().toLocaleString('en-ET')}\n`, 'latin1'),
+            Buffer.from('--------------------------------\n', 'latin1'),
+            Buffer.from([0x1b, 0x61, 0x00]),
+            Buffer.from(items + '\n', 'latin1'),
+            Buffer.from('--------------------------------\n', 'latin1'),
+            Buffer.from([0x1b, 0x61, 0x02, 0x1b, 0x45, 0x01]),
+            Buffer.from(`TOTAL: ETB ${Number(order.grandTotal || 0).toFixed(2)}\n`, 'latin1'),
+            Buffer.from([0x1b, 0x45, 0x00, 0x1b, 0x61, 0x01]),
+            Buffer.from('Thank you! Come again.\n', 'latin1'),
+            Buffer.from([0x1b, 0x64, 0x04, 0x1d, 0x56, 0x00]),
+          ]);
+        }
+        try {
+          await sendRawToPrinter(ip, targetPort, receiptData);
+          res.writeHead(200);
+          res.end(JSON.stringify({ ok: true, via: 'local_tcp' }));
+        } catch (err) {
+          res.writeHead(200);
+          res.end(JSON.stringify({ ok: false, error: err.message }));
+        }
+        return;
+      }
+
+      // Default health/status
+      res.writeHead(200);
+      res.end(JSON.stringify({ ok: true, agent: 'Bloom Print Agent', localBridge: true }));
+    });
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`[LOCAL] Port ${port} is in use; cloud relay remains fully active.`);
+    } else {
+      console.error('[LOCAL] Server error:', err.message);
+    }
+  });
+
+  server.listen(port, '127.0.0.1', () => {
+    console.log(`[LOCAL] ✓ Local POS bridge active on http://127.0.0.1:${port}`);
+  });
+}
+
 // Start agent
 (async () => {
+  startLocalServer(5000);
+
   console.log(`[LAN] Checking local printer at ${config.defaultPrinterIp}:${config.defaultPrinterPort}...`);
   const isOnline = await checkLocalPrinter();
   if (isOnline) {
