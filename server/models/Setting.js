@@ -91,6 +91,11 @@ const settingSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
+    // ── Telegram Daily Sales Digest Scheduler ─────────────────────
+    telegramDailyReportEnabled: { type: Boolean, default: true },
+    telegramDailyReportTime: { type: String, default: '12:00' },
+    lastDailyReportExecution: { type: String, default: '' },
+    lastDailyReportDate: { type: String, default: '' },
     notes: { type: String, default: 'Bloom Bar and Restaurant   CaféHotel Management & Stock Control System' },
 
     // ── Pricing & Cost Parameters ─────────────────────────────────

@@ -68,30 +68,42 @@ async function getChatIds() {
 }
 
 function sendToOne(chatId, text) {
-  const body = JSON.stringify({
-    chat_id: chatId,
-    text,
-    parse_mode: 'HTML',
-    disable_web_page_preview: true,
-  });
+  return new Promise((resolve) => {
+    if (!chatId) return resolve({ ok: false, error: 'Invalid chat ID' });
 
-  const options = {
-    hostname: 'api.telegram.org',
-    path: `/bot${BOT_TOKEN}/sendMessage`,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-  };
+    const body = JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
+    });
 
-  const req = https.request(options, (res) => {
-    if (res.statusCode !== 200) {
+    const options = {
+      hostname: 'api.telegram.org',
+      path: `/bot${BOT_TOKEN}/sendMessage`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+    };
+
+    const req = https.request(options, (res) => {
       let data = '';
       res.on('data', chunk => { data += chunk; });
-      res.on('end', () => console.warn(`[Telegram] Non-200 for chat ${chatId}:`, data));
-    }
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          resolve({ ok: true, data });
+        } else {
+          console.warn(`[Telegram] Non-200 for chat ${chatId}:`, data);
+          resolve({ ok: false, error: data });
+        }
+      });
+    });
+    req.on('error', (err) => {
+      console.warn(`[Telegram] Send error to ${chatId}:`, err.message);
+      resolve({ ok: false, error: err.message });
+    });
+    req.write(body);
+    req.end();
   });
-  req.on('error', (err) => console.warn(`[Telegram] Send error to ${chatId}:`, err.message));
-  req.write(body);
-  req.end();
 }
 
 function sendTelegram(text) {
@@ -1124,5 +1136,8 @@ module.exports = {
   notifyExpenseDeleted,
   sendNotification: sendTelegram,
   sendTelegram,
+  sendToOne,
+  sendMessage: sendToOne,
+  getChatIds,
 };
 

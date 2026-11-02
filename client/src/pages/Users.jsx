@@ -117,6 +117,10 @@ const Users = () => {
   };
 
   const handleDelete = async (u) => {
+    if (u.role === 'dev') {
+      alert('Access Denied: System Developer / Owner accounts are protected and cannot be deleted.');
+      return;
+    }
     if (!window.confirm(`Permanently delete staff account for "${u.name}" (${u.email})?\n\nThis will remove their system access and automatically remove them from Telegram notifications permanently.`)) {
       return;
     }

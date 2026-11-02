@@ -78,6 +78,24 @@ const deleteEmployee = asyncHandler(async (req, res) => {
   const emp = await Employee.findById(req.params.id);
   if (!emp || emp.deletedAt) { res.status(404); throw new Error('Employee not found'); }
 
+  // Protect dev / system owner employee records
+  try {
+    const User = require('../models/User');
+    const devUser = await User.findOne({
+      role: 'dev',
+      $or: [
+        ...(emp.phone ? [{ phone: emp.phone }] : []),
+        ...(emp.email ? [{ email: emp.email.toLowerCase().trim() }] : []),
+      ],
+    });
+    if (devUser) {
+      res.status(403);
+      throw new Error('Access denied: Developer / System Owner account is protected and cannot be deleted.');
+    }
+  } catch (err) {
+    if (err.status === 403 || err.message?.includes('Developer')) throw err;
+  }
+
   emp.deletedAt = new Date();
   emp.deletedBy = req.user?.name || 'System';
   await emp.save();

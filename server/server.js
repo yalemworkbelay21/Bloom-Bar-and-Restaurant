@@ -194,6 +194,51 @@ if (!process.env.VERCEL) {
 
       console.log(`[KEEP-ALIVE] Server ping active every 10 min → ${publicUrl}/api/health`);
     }
+
+    // ── Automated Daily Sales Summary Scheduler ───────────────────
+    // Checks every 20 seconds if current Addis Ababa local time matches
+    // Setting.telegramDailyReportTime and hasn't already been dispatched for this time.
+    setInterval(async () => {
+      try {
+        const Setting = require('./models/Setting');
+        const settings = await Setting.findOne();
+        if (!settings || settings.telegramDailyReportEnabled === false) return;
+
+        // Current time in Addis Ababa timezone (HH:mm)
+        const now = new Date();
+        const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Africa/Addis_Ababa',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        });
+        const currentTime = timeFormatter.format(now); // "HH:MM"
+
+        const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Africa/Addis_Ababa',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        });
+        const todayStr = dateFormatter.format(now); // "YYYY-MM-DD"
+
+        const scheduledTime = (settings.telegramDailyReportTime || '12:00').padStart(5, '0');
+        const reportKey = `${todayStr}_${scheduledTime}`;
+
+        if (currentTime === scheduledTime && settings.lastDailyReportExecution !== reportKey) {
+          console.log(`[DAILY-REPORT] Triggering automated daily sales digest for ${todayStr} at ${currentTime}...`);
+          const { sendDailySalesReport } = require('./utils/dailySalesReporter');
+          const res = await sendDailySalesReport({ isManual: false });
+          if (res?.success) {
+            settings.lastDailyReportExecution = reportKey;
+            settings.lastDailyReportDate = todayStr;
+            await settings.save().catch(() => { });
+          }
+        }
+      } catch (err) {
+        console.warn('[DAILY-REPORT] Scheduler error:', err.message);
+      }
+    }, 20 * 1000);
   });
 }
 

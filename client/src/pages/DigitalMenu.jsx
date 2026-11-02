@@ -2670,8 +2670,8 @@ export default function DigitalMenu() {
                     type="button"
                     onClick={() => setNewTableInput(tbl)}
                     className={`py-2 px-1 rounded-xl text-xs font-black transition cursor-pointer ${isSelected
-                        ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300'
-                        : 'bg-slate-100 text-slate-700 hover:bg-amber-50'
+                      ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300'
+                      : 'bg-slate-100 text-slate-700 hover:bg-amber-50'
                       }`}
                   >
                     {tbl.replace('Table ', 'T-')}

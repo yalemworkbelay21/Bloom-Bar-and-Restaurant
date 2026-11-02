@@ -154,6 +154,8 @@ const updateSettings = asyncHandler(async (req, res) => {
     'sidebarTheme', 'sidebarMaterialIcons',
     // Digital Menu & QR Catalog Settings
     'digitalMenuSettings',
+    // Telegram Daily Sales Digest
+    'telegramDailyReportEnabled', 'telegramDailyReportTime',
   ];
 
   allowedFields.forEach((field) => {
