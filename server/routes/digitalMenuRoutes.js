@@ -68,6 +68,23 @@ router.get('/products/public-menu', asyncHandler(async (req, res) => {
     Setting.findOne().lean(),
   ]);
 
+  // If Digital Menu Suite is unlicensed / inactive in Developer Licensing
+  if (settings?.licensedModules?.digitalMenu === false) {
+    return res.json({
+      success: true,
+      isLicensed: false,
+      cafeName: settings?.hotelName || 'Bloom Bar & Restaurant',
+      tagline: 'Authentic Flavor • Warm Hospitality',
+      taxRate: Number(settings?.taxRate ?? 15),
+      serviceChargeRate: Number(settings?.serviceChargeRate ?? 10),
+      enableServiceCharge: !!settings?.enableServiceCharge,
+      digitalMenuSettings: settings?.digitalMenuSettings || {},
+      categories: [],
+      products: [],
+      message: 'Digital menu self-ordering is currently offline. Please order directly with our table waiter.',
+    });
+  }
+
   const stockMap = new Map((rawMaterials || []).map((m) => [String(m._id), Number(m.currentStock || 0)]));
 
   const enrichedProducts = (products || []).map((p) => {
@@ -182,6 +199,10 @@ router.post('/captain-orders/customer-order', asyncHandler(async (req, res) => {
   }
 
   const settings = await Setting.findOne().lean();
+  if (settings?.licensedModules?.digitalMenu === false) {
+    res.status(403);
+    throw new Error('Digital self-ordering is currently inactive. Please place your order directly with your table waiter.');
+  }
   const taxRate = Number(settings?.taxRate ?? 15);
   let safeServicePct = 0;
   if (settings?.enableServiceCharge && (!settings?.autoApplyServiceChargeDineIn || orderType === 'dine_in')) {

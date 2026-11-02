@@ -4,13 +4,12 @@ import api from '../../api/axios';
 import { formatAttachmentUrl, isImageAttachment, isPdfAttachment } from '../../utils/attachmentUtils';
 
 export default function AttachmentUploader({ attachments = [], onAttachmentsChange, disabled = false }) {
-  const inputRef   = useRef(null);
-  const cameraRef  = useRef(null);
+  const inputRef = useRef(null);
+  const cameraRef = useRef(null);
   const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver]  = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [failedImages, setFailedImages] = useState({});
-
   const uploadFiles = async (files) => {
     if (!files || files.length === 0) return;
     setUploading(true);
@@ -25,20 +24,17 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
       alert(err.response?.data?.message || 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
-      if (inputRef.current)  inputRef.current.value  = '';
+      if (inputRef.current) inputRef.current.value = '';
       if (cameraRef.current) cameraRef.current.value = '';
     }
   };
-
-  const handleFileChange  = (e) => uploadFiles(e.target.files);
+  const handleFileChange = (e) => uploadFiles(e.target.files);
   const handleCameraChange = (e) => uploadFiles(e.target.files);
-
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
     uploadFiles(e.dataTransfer.files);
   };
-
   const removeAttachment = (idx) => {
     onAttachmentsChange(attachments.filter((_, i) => i !== idx));
   };
@@ -46,7 +42,6 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
   const handleImgError = (idx) => {
     setFailedImages((prev) => ({ ...prev, [idx]: true }));
   };
-
   return (
     <div className="space-y-3">
       {/* Drop Zone */}
@@ -87,7 +82,6 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
               >
                 <Paperclip size={12} /> Attach File
               </button>
-
               {/* Take Photo — uses device camera */}
               <button
                 type="button"
@@ -101,7 +95,6 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
             </div>
           </>
         )}
-
         {/* Hidden file input — any file */}
         <input
           ref={inputRef}

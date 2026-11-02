@@ -42,7 +42,7 @@ export default function DigitalMenuSettings() {
     enabled: true,
     allowOrdering: true,
     bannerText: 'Delicious Food Freshly Made',
-    bannerSubtitle: 'Fresh Buns, Hot Specialty Coffee & Savory Meals',
+    bannerSubtitle: 'Authentic Flavor, Fine Drinks & Warm Hospitality',
     tiktokUrl: 'https://www.tiktok.com/@bloombar',
     facebookUrl: 'https://www.facebook.com/bloombar',
     instagramUrl: 'https://www.instagram.com/bloombar',
@@ -61,17 +61,17 @@ export default function DigitalMenuSettings() {
     // About Section
     aboutTitle: 'Bloom Bar & Restaurant',
     aboutSubtitle: 'Bole Road • Addis Ababa, Ethiopia',
-    aboutDescription: 'Famous for our freshly baked signature Mexican coffee buns with crisp caramelized butter crust, specialty coffee hand-crafted by master baristas, and gourmet dining in a warm, welcoming ambience.',
-    aboutDescriptionAmharic: 'በልዩ ጥራትና ፍቅር የሚዘጋጁ ትኩስ የካራሜል ቡኖች፣ በእደ-ጥበብ የተጠበሱ ምርጥ የባሪስታ ቡናዎች፣ ጣፋጭ በርገሮች እና የድንጋይ ምድጃ ፒሳዎች ከሞቅ ያለ እንግዳ ተቀባይነት ጋር።',
+    aboutDescription: 'Famous for our signature recipes, authentic cuisine, craft beverages, and warm welcoming hospitality.',
+    aboutDescriptionAmharic: 'በልዩ ጥራትና ፍቅር የሚዘጋጁ ትኩስ ምግቦች፣ ምርጥ መጠጦች እና ሞቅ ያለ እንግዳ ተቀባይነት።',
     aboutBadge1Icon: '☕',
-    aboutBadge1Label: 'Specialty Coffee',
-    aboutBadge2Icon: '🥐',
-    aboutBadge2Label: 'Fresh Buns',
+    aboutBadge1Label: 'Specialty Drinks',
+    aboutBadge2Icon: '🍽️',
+    aboutBadge2Label: 'Gourmet Dining',
     aboutBadge3Icon: '👨‍🍳',
     aboutBadge3Label: 'Master Chefs',
     // Showcase Gallery
     galleryTitle: 'Our Baristas, Chefs & Atmosphere',
-    galleryTitleAmharic: 'የካፌው ድባብ እና የእጅ ሙያ',
+    galleryTitleAmharic: 'የሬስቶራንቱ ድባብ እና የእጅ ሙያ',
     gallerySubtitle: 'Bloom Atmosphere Gallery',
     galleryItems: [
       {
@@ -80,7 +80,7 @@ export default function DigitalMenuSettings() {
       },
       {
         imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=600&q=80',
-        caption: '🥐 Fresh Caramel Buns',
+        caption: '🍽️ Signature Cuisine',
       },
       {
         imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80',
@@ -378,9 +378,9 @@ export default function DigitalMenuSettings() {
 </head>
 <body>
   <div class="card">
-    <div class="logo">🥐</div>
+    <div class="logo">🍽️</div>
     <h1 class="cafe-name">BLOOM BAR & RESTAURANT</h1>
-    <div class="tagline">Fresh Buns &bull; Specialty Coffee</div>
+    <div class="tagline">Bar &amp; Restaurant &bull; Authentic Flavor</div>
     <div class="table-badge">${table}</div>
     <div class="qr-box">
       <img src="${qrImage}" class="qr-img" alt="Scan to Order" />
@@ -413,9 +413,9 @@ export default function DigitalMenuSettings() {
         const qrImage = qrDataUrls[table] || '';
         return `
       <div class="card">
-        <div class="logo">🥐</div>
+        <div class="logo">🍽️</div>
         <h1 class="cafe-name">BLOOM BAR & RESTAURANT</h1>
-        <div class="tagline">Fresh Buns &bull; Specialty Coffee</div>
+        <div class="tagline">Bar &amp; Restaurant &bull; Authentic Flavor</div>
         <div class="table-badge">${table}</div>
         <div class="qr-box">
           <img src="${qrImage}" class="qr-img" alt="Scan to Order" />
@@ -1154,16 +1154,16 @@ export default function DigitalMenuSettings() {
                 </div>
               </div>
               <p className="text-[11px] text-amber-100/80 leading-relaxed">
-                {settings.aboutDescription || 'Famous for our freshly baked signature Mexican coffee buns...'}
+                {settings.aboutDescription || 'Famous for our signature recipes, authentic cuisine, and warm welcoming hospitality...'}
               </p>
               <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
                 <div className="p-1.5 rounded-lg bg-white/5 border border-white/10">
                   <span className="text-sm block">{settings.aboutBadge1Icon || '☕'}</span>
-                  <span className="text-[9px] font-extrabold text-amber-200 block mt-0.5">{settings.aboutBadge1Label || 'Specialty Coffee'}</span>
+                  <span className="text-[9px] font-extrabold text-amber-200 block mt-0.5">{settings.aboutBadge1Label || 'Specialty Drinks'}</span>
                 </div>
                 <div className="p-1.5 rounded-lg bg-white/5 border border-white/10">
-                  <span className="text-sm block">{settings.aboutBadge2Icon || '🥐'}</span>
-                  <span className="text-[9px] font-extrabold text-amber-200 block mt-0.5">{settings.aboutBadge2Label || 'Fresh Buns'}</span>
+                  <span className="text-sm block">{settings.aboutBadge2Icon || '🍽️'}</span>
+                  <span className="text-[9px] font-extrabold text-amber-200 block mt-0.5">{settings.aboutBadge2Label || 'Gourmet Dining'}</span>
                 </div>
                 <div className="p-1.5 rounded-lg bg-white/5 border border-white/10">
                   <span className="text-sm block">{settings.aboutBadge3Icon || '👨‍🍳'}</span>
@@ -1201,7 +1201,7 @@ export default function DigitalMenuSettings() {
                 <textarea
                   rows={2}
                   value={settings.aboutDescription || ''}
-                  placeholder="Famous for our freshly baked signature Mexican coffee buns..."
+                  placeholder="Famous for our signature recipes, authentic cuisine, and warm welcoming hospitality..."
                   onChange={(e) => setSettings((p) => ({ ...p, aboutDescription: e.target.value }))}
                   className="w-full border border-ink-200 rounded-xl px-3 py-2 outline-none focus:border-amber-700 leading-relaxed"
                 />
@@ -1212,7 +1212,7 @@ export default function DigitalMenuSettings() {
                 <textarea
                   rows={2}
                   value={settings.aboutDescriptionAmharic || ''}
-                  placeholder="በልዩ ጥራትና ፍቅር የሚዘጋጁ ትኩስ የካራሜል ቡኖች..."
+                  placeholder="በልዩ ጥራትና ፍቅር የሚዘጋጁ ትኩስ ምግቦች፣ ምርጥ መጠጦች..."
                   onChange={(e) => setSettings((p) => ({ ...p, aboutDescriptionAmharic: e.target.value }))}
                   className="w-full border border-ink-200 rounded-xl px-3 py-2 outline-none focus:border-amber-700 leading-relaxed font-sans"
                 />
@@ -1236,8 +1236,8 @@ export default function DigitalMenuSettings() {
                     />
                     <input
                       type="text"
-                      value={settings.aboutBadge1Label || 'Specialty Coffee'}
-                      placeholder="Specialty Coffee"
+                      value={settings.aboutBadge1Label || 'Specialty Drinks'}
+                      placeholder="Specialty Drinks"
                       onChange={(e) => setSettings((p) => ({ ...p, aboutBadge1Label: e.target.value }))}
                       className="flex-1 border border-ink-200 rounded-lg px-2.5 py-1 text-xs bg-white"
                     />
@@ -1249,16 +1249,16 @@ export default function DigitalMenuSettings() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={settings.aboutBadge2Icon || '🥐'}
+                      value={settings.aboutBadge2Icon || '🍽️'}
                       title="Emoji Icon"
-                      placeholder="🥐"
+                      placeholder="🍽️"
                       onChange={(e) => setSettings((p) => ({ ...p, aboutBadge2Icon: e.target.value }))}
                       className="w-12 text-center border border-ink-200 rounded-lg px-2 py-1 text-sm bg-white"
                     />
                     <input
                       type="text"
-                      value={settings.aboutBadge2Label || 'Fresh Buns'}
-                      placeholder="Fresh Buns"
+                      value={settings.aboutBadge2Label || 'Gourmet Dining'}
+                      placeholder="Gourmet Dining"
                       onChange={(e) => setSettings((p) => ({ ...p, aboutBadge2Label: e.target.value }))}
                       className="flex-1 border border-ink-200 rounded-lg px-2.5 py-1 text-xs bg-white"
                     />

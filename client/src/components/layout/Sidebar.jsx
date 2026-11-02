@@ -383,7 +383,7 @@ const Sidebar = ({
     canSeeNav('captainOrder') && { to: '/captain-order', label: 'Captain Order', icon: ReceiptLongRoundedIcon },
     canSeeNav('cashSales') && { to: '/cash-sales', label: 'Cash Sales', icon: PaidRoundedIcon },
     canSeeNav('pos') && { to: '/pos', label: 'POS Ordering', icon: PointOfSaleRoundedIcon },
-    { to: '/menu', label: 'Digital Menu (QR)', icon: QrCode2RoundedIcon, external: true },
+    (isModuleLicensed('digitalMenu') || user?.role === 'dev') && { to: '/menu', label: 'Digital Menu (QR)', icon: QrCode2RoundedIcon, external: true },
   ].filter(Boolean);
 
   const inventoryItems = [
@@ -568,7 +568,9 @@ const Sidebar = ({
                 {canSeeNav('pos') && (
                   <SubLink to="/pos" label="POS Ordering" icon={PointOfSaleRoundedIcon} onClick={onClose} />
                 )}
-                <SubLink to="/menu" label="Digital Menu (QR)" icon={QrCode2RoundedIcon} onClick={onClose} target="_blank" />
+                {(isModuleLicensed('digitalMenu') || user?.role === 'dev') && (
+                  <SubLink to="/menu" label="Digital Menu (QR)" icon={QrCode2RoundedIcon} onClick={onClose} target="_blank" />
+                )}
               </CollapsibleNav>
             )
           )}

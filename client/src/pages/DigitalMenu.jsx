@@ -779,7 +779,7 @@ export default function DigitalMenu() {
                 {menuData.cafeName || 'Bloom Bar & Restaurant'}
               </h1>
               <p className="text-[10px] text-amber-300 font-bold tracking-wider">
-                Fresh Buns &bull; Specialty Coffee
+                Bar &amp; Restaurant &bull; Authentic Flavor
               </p>
             </div>
           </div>
@@ -879,7 +879,7 @@ export default function DigitalMenu() {
             📍 Addis Ababa, Ethiopia
           </p>
           <p className="text-[10px] text-stone-400">
-            Enjoy our world-famous freshly baked coffee buns &amp; handcrafted beverages
+            Enjoy our delicious culinary creations, specialty drinks &amp; warm hospitality
           </p>
         </div>
       </div>
@@ -1572,21 +1572,21 @@ export default function DigitalMenu() {
           </div>
           <p className="text-xs text-amber-100/80 leading-relaxed font-sans">
             {lang === 'am'
-              ? (menuData?.digitalMenuSettings?.aboutDescriptionAmharic || 'በልዩ ጥራትና ፍቅር የሚዘጋጁ ትኩስ የካራሜል ቡኖች፣ በእደ-ጥበብ የተጠበሱ ምርጥ የባሪስታ ቡናዎች፣ ጣፋጭ በርገሮች እና የድንጋይ ምድጃ ፒሳዎች ከሞቅ ያለ እንግዳ ተቀባይነት ጋር።')
-              : (menuData?.digitalMenuSettings?.aboutDescription || 'Famous for our freshly baked signature Mexican coffee buns with crisp caramelized butter crust, specialty coffee hand-crafted by master baristas, and gourmet dining in a warm, welcoming ambience.')}
+              ? (menuData?.digitalMenuSettings?.aboutDescriptionAmharic || 'በልዩ ጥራትና ፍቅር የሚዘጋጁ ትኩስ ምግቦች፣ በእደ-ጥበብ የተዘጋጁ ምርጥ መጠጦች፣ ጣፋጭ ምግቦች እና የድንጋይ ምድጃ ፒሳዎች ከሞቅ ያለ እንግዳ ተቀባይነት ጋር።')
+              : (menuData?.digitalMenuSettings?.aboutDescription || 'Celebrated for culinary excellence, authentic Ethiopian cuisine, craft beverages, and warm hospitality in a vibrant, welcoming ambience.')}
           </p>
 
           <div className="grid grid-cols-3 gap-2 pt-1 text-center">
             <div className="p-2 rounded-xl bg-white/5 border border-white/10">
               <span className="text-base block">{menuData?.digitalMenuSettings?.aboutBadge1Icon || '☕'}</span>
               <span className="text-[10px] font-extrabold text-amber-200 block mt-0.5">
-                {menuData?.digitalMenuSettings?.aboutBadge1Label || 'Specialty Coffee'}
+                {menuData?.digitalMenuSettings?.aboutBadge1Label || 'Specialty Drinks'}
               </span>
             </div>
             <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-              <span className="text-base block">{menuData?.digitalMenuSettings?.aboutBadge2Icon || '🥐'}</span>
+              <span className="text-base block">{menuData?.digitalMenuSettings?.aboutBadge2Icon || '🍽️'}</span>
               <span className="text-[10px] font-extrabold text-amber-200 block mt-0.5">
-                {menuData?.digitalMenuSettings?.aboutBadge2Label || 'Fresh Buns'}
+                {menuData?.digitalMenuSettings?.aboutBadge2Label || 'Gourmet Dining'}
               </span>
             </div>
             <div className="p-2 rounded-xl bg-white/5 border border-white/10">
@@ -1624,7 +1624,7 @@ export default function DigitalMenu() {
                 },
                 {
                   imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=600&q=80',
-                  caption: '🥐 Fresh Caramel Buns',
+                  caption: '🍽️ Signature Cuisine',
                 },
                 {
                   imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80',
@@ -1711,7 +1711,7 @@ export default function DigitalMenu() {
                   {lang === 'am' ? 'ማህበራዊ ሚዲያዎቻችንን ይከተሉ' : 'Follow Bloom Bar & Restaurant on Social Media'}
                 </h4>
                 <p className="text-[10px] text-slate-500 font-medium">
-                  {lang === 'am' ? 'አዳዲስ ምግቦች፣ ቅናሾች እና ልዩ የካፌ ድባብ' : 'Daily fresh baked buns, deals & café moments'}
+                  {lang === 'am' ? 'አዳዲስ ምግቦች፣ ቅናሾች እና ልዩ ድባብ' : 'Daily fresh dishes, chef specials & vibrant moments'}
                 </p>
               </div>
             </div>

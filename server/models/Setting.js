@@ -68,6 +68,7 @@ const settingSchema = new mongoose.Schema(
       type: Object,
       default: {
         subsystem: true, // Subsystem: POS Ordering, Captain Order, Cash Sales
+        digitalMenu: true, // Digital Menu Suite: Customer QR Menu & Table Self-Ordering
         finance: true, // Finance & Expenses Suite: Overhead Expenses, Analytics & P&L
         themeCustomization: true, // Allow Hotel Admin to customize Sidebar Appearance & Brand Theme
         materialIcons: true, // Material UI Icons with colorful badges (true) vs Classic minimal icons (false)
@@ -158,7 +159,7 @@ const settingSchema = new mongoose.Schema(
           },
           {
             imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=600&q=80',
-            caption: '🥐 Fresh Pastries & Buns',
+            caption: '🍽️ Signature Cuisine',
           },
           {
             imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80',
