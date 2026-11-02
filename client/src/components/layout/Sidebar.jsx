@@ -293,7 +293,7 @@ const Sidebar = ({
   onToggleCollapse,
   onExpand,
 }) => {
-  const { user, canSeeNav, sidebarTheme, useMaterialIcons } = useAuth();
+  const { user, canSeeNav, sidebarTheme, useMaterialIcons, isModuleLicensed } = useAuth();
   const theme = SIDEBAR_THEMES[sidebarTheme] || SIDEBAR_THEMES.navy;
   const location = useLocation();
   const navigate = useNavigate();
