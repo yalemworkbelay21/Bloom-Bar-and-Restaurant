@@ -152,11 +152,19 @@ const updateSettings = asyncHandler(async (req, res) => {
     'enableServiceCharge', 'serviceChargeRate', 'serviceChargePresets', 'autoApplyServiceChargeDineIn',
     // Sidebar Customization
     'sidebarTheme', 'sidebarMaterialIcons',
+    // Digital Menu & QR Catalog Settings
+    'digitalMenuSettings',
   ];
 
   allowedFields.forEach((field) => {
     if (req.body[field] !== undefined) {
-      if (field === 'serviceChargeRate') {
+      if (field === 'digitalMenuSettings') {
+        settings.digitalMenuSettings = {
+          ...(settings.digitalMenuSettings || {}),
+          ...req.body.digitalMenuSettings,
+        };
+        settings.markModified('digitalMenuSettings');
+      } else if (field === 'serviceChargeRate') {
         settings.serviceChargeRate = Math.min(100, Math.max(0, Number(req.body.serviceChargeRate) || 0));
       } else if (field === 'serviceChargePresets' && Array.isArray(req.body.serviceChargePresets)) {
         settings.serviceChargePresets = req.body.serviceChargePresets

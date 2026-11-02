@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: [
         'purchase', 'stock_request', 'transaction', 'consumption',
-        'material', 'employee', 'user', 'system', 'low_stock',
+        'material', 'employee', 'user', 'system', 'low_stock', 'order',
       ],
       default: 'system',
     },

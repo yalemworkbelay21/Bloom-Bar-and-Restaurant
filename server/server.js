@@ -109,6 +109,7 @@ app.use('/api/purchases', require('./routes/purchaseRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api', require('./routes/digitalMenuRoutes')); // Public Digital Menu & QR Ordering routes
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/settings', require('./routes/settingRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));

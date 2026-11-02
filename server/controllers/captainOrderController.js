@@ -249,10 +249,32 @@ const voidCaptainOrder = asyncHandler(async (req, res) => {
   res.json({ success: true, order, message: `Captain Order #${order.orderNo} voided.` });
 });
 
+// @route POST /api/captain-orders/:id/approve
+const approveCaptainOrder = asyncHandler(async (req, res) => {
+  const order = await CaptainOrder.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error("Captain order not found");
+  }
+  order.status = "open";
+  order.waiterApproval = {
+    required: false,
+    status: "approved",
+    approvedBy: req.user?._id || null,
+    approvedAt: new Date(),
+  };
+  if (req.user?.name) {
+    order.waiter = req.user._id;
+    order.waiterName = req.user.name;
+  }
+  await order.save();
+  res.json({ success: true, order, message: `Captain Order #${order.orderNo} approved!` });
+});
+
 // @route GET /api/captain-orders/active-tables
 const getActiveTables = asyncHandler(async (req, res) => {
   const activeOrders = await CaptainOrder.find({
-    status: { $in: ["open", "sent_to_kitchen", "ready", "billed"] },
+    status: { $in: ["pending_approval", "open", "sent_to_kitchen", "ready", "billed"] },
   }).select("tableNo tableLabel status waiterName guestCount grandTotal createdAt items orderNo").lean();
   res.json(activeOrders);
 });
@@ -264,5 +286,6 @@ module.exports = {
   updateCaptainOrder,
   sendToKitchen,
   voidCaptainOrder,
+  approveCaptainOrder,
   getActiveTables,
 };

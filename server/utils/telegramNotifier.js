@@ -1122,5 +1122,7 @@ module.exports = {
   notifyPasswordChanged,
   notifyExpenseCreated,
   notifyExpenseDeleted,
+  sendNotification: sendTelegram,
+  sendTelegram,
 };
 

@@ -109,6 +109,73 @@ const settingSchema = new mongoose.Schema(
     rawMaterialPriceAdjustValue: { type: Number, default: 0, min: 0 },
     // Product Selling Price Bulk Adjustment — percentage to add to ALL product selling prices
     productSellingPriceAdjustPercent: { type: Number, default: 0, min: 0, max: 500 },
+
+    // ── Digital Menu & QR Ordering Settings ──────────────────────
+    digitalMenuSettings: {
+      type: Object,
+      default: {
+        enabled: true,
+        allowOrdering: true,
+        enableCallWaiter: true,
+        enableBillRequest: true,
+        bannerText: 'Delicious Food Freshly Made',
+        bannerSubtitle: 'Signature Dishes, Specialty Coffee & Drinks',
+        phone: '+251 91 123 4567',
+        landline: '+251 11 667 8900',
+        googleMapsLink: 'https://maps.google.com/?q=Bloom+Bar+and+Restaurant+Addis+Ababa',
+        googleMapsEmbedUrl: 'https://maps.google.com/maps?q=Addis%20Ababa,%20Ethiopia&output=embed',
+        tiktokUrl: '',
+        facebookUrl: '',
+        instagramUrl: '',
+        telegramUrl: 'https://t.me/bloombar',
+        tables: [
+          'Table 01', 'Table 02', 'Table 03', 'Table 04', 'Table 05',
+          'Table 06', 'Table 07', 'Table 08', 'Table 09', 'Table 10',
+          'Table 12', 'Table 15', 'VIP 01', 'Patio 01',
+        ],
+        aboutTitle: 'Bloom Bar & Restaurant',
+        aboutSubtitle: 'Addis Ababa, Ethiopia',
+        aboutDescription: 'Famous for fresh signature recipes, specialty drinks, and warm welcoming hospitality.',
+        aboutDescriptionAmharic: 'በልዩ ጥራትና ፍቅር የሚዘጋጁ ምርጥ ምግቦችና መጠጦች ከሞቅ ያለ እንግዳ ተቀባይነት ጋር።',
+        aboutBadge1Icon: '☕',
+        aboutBadge1Label: 'Specialty Coffee',
+        aboutBadge2Icon: '🍽️',
+        aboutBadge2Label: 'Fresh Food',
+        aboutBadge3Icon: '👨‍🍳',
+        aboutBadge3Label: 'Master Chefs',
+        galleryTitle: 'Our Chefs, Baristas & Atmosphere',
+        galleryTitleAmharic: 'የሬስቶራንቱ ድባብ እና የእጅ ሙያ',
+        gallerySubtitle: 'Photo Gallery',
+        galleryItems: [
+          {
+            imageUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=600&q=80',
+            caption: '☕ Barista Latte Craft',
+          },
+          {
+            imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=600&q=80',
+            caption: '🥐 Fresh Pastries & Buns',
+          },
+          {
+            imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80',
+            caption: '👨‍🍳 Chef Kitchen Plating',
+          },
+          {
+            imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80',
+            caption: '✨ Cozy Dining Ambiance',
+          },
+        ],
+      },
+    },
+    menuReviews: [
+      {
+        customerName: { type: String, default: 'Valued Guest' },
+        tableNo:      { type: String, default: '' },
+        rating:       { type: Number, default: 5 },
+        comment:      { type: String, default: '' },
+        tags:         [String],
+        createdAt:    { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );

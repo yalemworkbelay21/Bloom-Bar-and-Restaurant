@@ -8,6 +8,7 @@ const {
   updateCaptainOrder,
   sendToKitchen,
   voidCaptainOrder,
+  approveCaptainOrder,
   getActiveTables,
 } = require("../controllers/captainOrderController");
 
@@ -17,6 +18,7 @@ router.use(verifyModuleLicense('subsystem'));
 router.get("/active-tables", getActiveTables);
 router.route("/").get(getCaptainOrders).post(createCaptainOrder);
 router.route("/:id").get(getCaptainOrderById).patch(updateCaptainOrder);
+router.post("/:id/approve", approveCaptainOrder);
 router.post("/:id/send-to-kitchen", sendToKitchen);
 router.post("/:id/void", voidCaptainOrder);
 

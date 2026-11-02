@@ -22,6 +22,14 @@ const productSchema = new mongoose.Schema(
     deletedAt:   { type: Date, default: null },
     deletedBy:   { type: String, default: null },
     deletedFrom: { type: String, default: 'products' },
+
+    // ── Digital Menu & QR Catalog Fields ─────────────────────────
+    isAvailableOnMenu:  { type: Boolean, default: true },
+    manualOutOfStock:   { type: Boolean, default: false },
+    isFeatured:          { type: Boolean, default: false },
+    nameAmharic:         { type: String, default: '' },
+    descriptionAmharic:  { type: String, default: '' },
+    imageUrl:            { type: String, default: '' },
   },
   { timestamps: true }
 );
@@ -30,6 +38,8 @@ productSchema.index({ isActive: 1, createdAt: -1 });
 productSchema.index({ code: 1, isActive: 1 }, { sparse: true });
 productSchema.index({ name: 1 });
 productSchema.index({ category: 1 });
+productSchema.index({ isAvailableOnMenu: 1, isActive: 1 });
+productSchema.index({ isFeatured: 1 });
 
 productSchema.virtual('recipeCost').get(function () {
   return (this.ingredients || []).reduce((sum, ing) => {

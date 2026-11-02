@@ -143,7 +143,10 @@ const getProductById = asyncHandler(async (req, res) => {
 
 // POST /api/products
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, category, description, sellingPrice, ingredients, code, uom, parentCategory } = req.body;
+  const {
+    name, category, description, sellingPrice, ingredients, code, uom, parentCategory,
+    isAvailableOnMenu, manualOutOfStock, isFeatured, nameAmharic, descriptionAmharic, imageUrl,
+  } = req.body;
 
   if (!name?.trim()) { res.status(400); throw new Error('Product name is required.'); }
   if (sellingPrice !== undefined && Number(sellingPrice) < 0) {
@@ -190,7 +193,22 @@ const createProduct = asyncHandler(async (req, res) => {
     throw new Error(`A product named "${name.trim()}" already exists (Code: ${existingName.code || 'no code'}). Use a different name.`);
   }
 
-  const product = await Product.create({ code: trimmedCode, name: name.trim(), category, parentCategory, uom, description, sellingPrice, ingredients });
+  const product = await Product.create({
+    code: trimmedCode,
+    name: name.trim(),
+    category,
+    parentCategory,
+    uom,
+    description,
+    sellingPrice,
+    ingredients,
+    isAvailableOnMenu: isAvailableOnMenu !== undefined ? !!isAvailableOnMenu : true,
+    manualOutOfStock: manualOutOfStock !== undefined ? !!manualOutOfStock : false,
+    isFeatured: isFeatured !== undefined ? !!isFeatured : false,
+    nameAmharic: nameAmharic || '',
+    descriptionAmharic: descriptionAmharic || '',
+    imageUrl: imageUrl || '',
+  });
   const populated = await product.populate('ingredients.material', 'name unit unitCost');
   tg.notifyProductCreated(populated, req.user);
   invalidateDashboardCache();
@@ -203,7 +221,10 @@ const updateProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
   if (!product) { res.status(404); throw new Error('Product not found'); }
 
-  const { name, category, description, sellingPrice, ingredients, code, uom, parentCategory } = req.body;
+  const {
+    name, category, description, sellingPrice, ingredients, code, uom, parentCategory,
+    isAvailableOnMenu, manualOutOfStock, isFeatured, nameAmharic, descriptionAmharic, imageUrl,
+  } = req.body;
 
   // Duplicate code check — only if code is being changed to a non-empty value
   const trimmedCode = code !== undefined ? (code || '').trim() : null;
@@ -245,6 +266,12 @@ const updateProduct = asyncHandler(async (req, res) => {
   product.description = description ?? product.description;
   product.sellingPrice = sellingPrice ?? product.sellingPrice;
   product.ingredients = ingredients ?? product.ingredients;
+  if (isAvailableOnMenu !== undefined) product.isAvailableOnMenu = !!isAvailableOnMenu;
+  if (manualOutOfStock !== undefined) product.manualOutOfStock = !!manualOutOfStock;
+  if (isFeatured !== undefined) product.isFeatured = !!isFeatured;
+  if (nameAmharic !== undefined) product.nameAmharic = nameAmharic;
+  if (descriptionAmharic !== undefined) product.descriptionAmharic = descriptionAmharic;
+  if (imageUrl !== undefined) product.imageUrl = imageUrl;
 
   const updated = await product.save();
   const populated = await updated.populate('ingredients.material', 'name unit unitCost');

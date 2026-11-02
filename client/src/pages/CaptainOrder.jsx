@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import api from "../api/axios";
 import { posPrint } from "../utils/posPrint";
 import { exportToExcel, exportToCSV, exportToPDF } from "../utils/exportUtils";
+import { triggerNewOrderAlert, triggerWaiterCallAlert } from "../utils/audioAlert";
 import {
   Search, Plus, Minus, Trash2, ChevronDown, X, Clock,
   UtensilsCrossed, ShoppingBag, Printer, User, TableProperties,
@@ -44,6 +45,7 @@ function Toast({ msg, type = "success", onDone }) {
 
 const STATUS_CONFIG = {
   all: { label: "All Orders", bg: "#f1f5f9", border: "#cbd5e1", color: "#475569" },
+  pending_approval: { label: "QR Pending", bg: "#fef3c7", border: "#f59e0b", color: "#b45309" },
   held: { label: "Held", bg: "#f5f3ff", border: "#ddd6fe", color: "#7c3aed" },
   open: { label: "Open", bg: "#eff6ff", border: "#bfdbfe", color: "#2563eb" },
   sent_to_kitchen: { label: "In Kitchen", bg: "#fffbeb", border: "#fde68a", color: "#d97706" },
@@ -103,6 +105,58 @@ export default function CaptainOrder() {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  // Live SSE listener for incoming customer QR orders & waiter calls
+  useEffect(() => {
+    let es = null;
+    try {
+      es = new EventSource('/api/captain-orders/stream');
+      es.addEventListener('customer_qr_order', (e) => {
+        try {
+          const payload = JSON.parse(e.data)?.data;
+          if (payload) {
+            triggerNewOrderAlert({
+              orderId: payload._id,
+              orderNo: payload.orderNo,
+              tableNo: payload.tableNo,
+              itemsCount: payload.items?.length,
+              totalAmount: payload.grandTotal,
+            });
+            showToast(`🛎️ New QR Order received from ${payload.tableNo}!`, "info");
+            loadOrders();
+          }
+        } catch (_) {}
+      });
+      es.addEventListener('call_waiter', (e) => {
+        try {
+          const payload = JSON.parse(e.data)?.data;
+          if (payload) {
+            triggerWaiterCallAlert(payload);
+            const isBill = payload.action === 'request_bill';
+            showToast(`🛎️ ${payload.tableNo}: ${isBill ? 'Bill Requested' : 'Waiter Called'}!`, "info");
+          }
+        } catch (_) {}
+      });
+    } catch (_) {}
+
+    return () => {
+      if (es) es.close();
+    };
+  }, [loadOrders]);
+
+  // Approve QR self-order
+  const handleApproveOrder = async (orderId) => {
+    try {
+      const res = await api.post(`/captain-orders/${orderId}/approve`);
+      showToast(`Order #${res.data.order?.orderNo || ''} approved!`);
+      loadOrders();
+      if (refOrder?._id === orderId) {
+        setRefOrder(res.data.order);
+      }
+    } catch (e) {
+      showToast(e.response?.data?.message || "Failed to approve order", "error");
+    }
+  };
 
   // Send to kitchen
   const handleSendToKitchen = async (orderId) => {
@@ -893,6 +947,32 @@ export default function CaptainOrder() {
                               Ref
                             </button>
 
+                            {/* Accept QR Order if pending approval */}
+                            {o.status === "pending_approval" && (
+                              <button
+                                type="button"
+                                onClick={() => handleApproveOrder(o._id)}
+                                title="Accept & Approve QR Order"
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: 8,
+                                  border: "none",
+                                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                                  color: "#ffffff",
+                                  fontWeight: 800,
+                                  fontSize: 11.5,
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  boxShadow: "0 2px 6px rgba(16,185,129,0.3)",
+                                }}
+                              >
+                                <CheckCircle2 size={12} />
+                                Accept
+                              </button>
+                            )}
+
                             {/* Send to Kitchen if Held or Open */}
                             {["held", "open"].includes(o.status) && (
                               <button
@@ -1088,6 +1168,31 @@ export default function CaptainOrder() {
 
             {/* Modal action buttons */}
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              {/* Accept & Approve QR Order */}
+              {refOrder.status === "pending_approval" && (
+                <button
+                  type="button"
+                  onClick={() => handleApproveOrder(refOrder._id)}
+                  style={{
+                    padding: "9px 18px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    boxShadow: "0 2px 6px rgba(16,185,129,0.3)",
+                  }}
+                >
+                  <CheckCircle2 size={14} />
+                  Accept &amp; Approve Order
+                </button>
+              )}
+
               {/* Void option */}
               {!["paid", "voided", "cancelled"].includes(refOrder.status) && (
                 <button
