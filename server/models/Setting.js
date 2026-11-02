@@ -28,8 +28,8 @@ const DEFAULT_CRUD_PERMISSIONS = {
 
 const settingSchema = new mongoose.Schema(
   {
-    hotelName: { type: String, default: 'Bloom Bar and Restaurant   Café' },
-    systemEmail: { type: String, default: 'info@Bloom Bar and Restaurant   Café.com' },
+    hotelName: { type: String, default: 'Bloom Africa' },
+    systemEmail: { type: String, default: 'info@bloombar.com' },
     phone: { type: String, default: '+251 911 000 111' },
     address: { type: String, default: 'Addis Ababa, Ethiopia' },
     currency: { type: String, default: 'ETB' },

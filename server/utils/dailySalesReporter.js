@@ -131,9 +131,12 @@ async function computeDailySalesMetrics(startDate, endDate) {
 /**
  * Format Telegram HTML report message
  */
-function formatDailyReportMessage(metrics, cafeName = 'Bloom Bar & Restaurant') {
+function formatDailyReportMessage(metrics, cafeName = 'Bloom Africa') {
   const formatBirr = (num) =>
     Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ETB';
+
+  const rawName = cafeName || 'Bloom Africa';
+  const cleanCafeName = rawName.replace(/baba\s*roti(\s*caf[eé])?/gi, 'Bloom Africa').replace(/\s+/g, ' ').trim() || 'Bloom Africa';
 
   const categoryLines = (metrics.topCategories || [])
     .slice(0, 8)
@@ -141,7 +144,7 @@ function formatDailyReportMessage(metrics, cafeName = 'Bloom Bar & Restaurant') 
     .join('\n');
 
   return (
-    `🏨 <b>${cafeName.toUpperCase()}</b>
+    `🏨 <b>${cleanCafeName.toUpperCase()}</b>
 📊 <b>DAILY SALES DIGEST — ${metrics.dateString}</b>
 ━━━━━━━━━━━━━━━━━━━━
 💰 <b>TOTAL SALES:</b> <code>${formatBirr(metrics.totalSales)}</code>

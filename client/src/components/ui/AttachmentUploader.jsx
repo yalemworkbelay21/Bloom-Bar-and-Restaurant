@@ -70,7 +70,6 @@ export default function AttachmentUploader({ attachments = [], onAttachmentsChan
                 JPG, PNG, PDF up to 10 MB · Permanent cloud storage
               </p>
             </div>
-
             {/* Two buttons side by side */}
             <div className="flex items-center gap-2 mt-1">
               {/* Attach File */}

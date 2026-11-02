@@ -34,8 +34,8 @@ const getSettings = asyncHandler(async (req, res) => {
   let settings = await Setting.findOne();
   if (!settings) {
     settings = await Setting.create({
-      hotelName: 'Bloom Bar and Restaurant   Café',
-      systemEmail: 'info@Bloom Bar and Restaurant   Café.com',
+      hotelName: 'Bloom Africa',
+      systemEmail: 'info@bloombar.com',
       phone: '+251 911 000 111',
       address: 'Addis Ababa, Ethiopia',
       currency: 'ETB',
@@ -57,6 +57,16 @@ const getSettings = asyncHandler(async (req, res) => {
     if (!settings.rolePermissions) {
       settings.rolePermissions = DEFAULT_ROLE_PERMISSIONS;
       settings.markModified('rolePermissions');
+      modified = true;
+    }
+    if (settings.hotelName && /baba\s*roti/i.test(settings.hotelName)) {
+      settings.hotelName = 'Bloom Africa';
+      settings.markModified('hotelName');
+      modified = true;
+    }
+    if (settings.systemEmail && /baba\s*roti/i.test(settings.systemEmail)) {
+      settings.systemEmail = 'info@bloombar.com';
+      settings.markModified('systemEmail');
       modified = true;
     }
     if (!settings.navVisibility) {
