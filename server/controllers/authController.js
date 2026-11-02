@@ -74,7 +74,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
   try {
     const jwt = require('jsonwebtoken');
-    const _jwtSecret = process.env.JWT_SECRET || 'baba_roti_cafe_super_secret_jwt_key_2024';
+    const _jwtSecret = process.env.JWT_SECRET || 'bloom_bar_restaurant_jwt_key_2024';
     const decoded = jwt.verify(otpToken, _jwtSecret);
     if (decoded.purpose !== 'otp_verified') throw new Error('Invalid OTP token');
   } catch (err) {
@@ -357,7 +357,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   // Issue a short-lived otpToken (JWT, 10 min) to gate the login step
   const jwt = require('jsonwebtoken');
-  const _jwtSecret = process.env.JWT_SECRET || 'baba_roti_cafe_super_secret_jwt_key_2024';
+  const _jwtSecret = process.env.JWT_SECRET || 'bloom_bar_restaurant_jwt_key_2024';
   const otpToken = jwt.sign(
     { id: user._id, purpose: 'otp_verified' },
     _jwtSecret,

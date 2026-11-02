@@ -1545,7 +1545,7 @@ export default function DigitalMenu() {
         </div>
       )}
 
-      {/* ── 6. ABOUT US, LOCATION (BOLE ALEM CINEMA) & EXPERIENCE SECTION ── */}
+      {/* ── 6. ABOUT US, LOCATION & EXPERIENCE SECTION ── */}
       <div className="px-3 pt-6 pb-28 space-y-5">
         {/* Section Divider */}
         <div className="flex items-center gap-3">
@@ -1652,7 +1652,7 @@ export default function DigitalMenu() {
           </div>
         </div>
 
-        {/* 3. Location & Google Map Card (Around Bole Alem Cinema) */}
+        {/* 3. Location & Google Map Card */}
         <div className="rounded-3xl border border-amber-200/90 bg-white p-4 shadow-md space-y-3">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5">
@@ -1681,7 +1681,7 @@ export default function DigitalMenu() {
           {/* Embedded Google Map */}
           <div className="rounded-2xl overflow-hidden border border-slate-200 h-44 relative bg-slate-100 shadow-inner">
             <iframe
-              title="Bloom Bar & Restaurant Location - Bole Alem Cinema"
+              title="Bloom Africa Location"
               src={menuData?.digitalMenuSettings?.googleMapsEmbedUrl || "https://maps.google.com/maps?q=Addis%20Ababa,%20Ethiopia&t=&z=16&ie=UTF8&iwloc=&output=embed"}
               className="w-full h-full border-0"
               loading="lazy"
@@ -1696,7 +1696,7 @@ export default function DigitalMenu() {
               className="w-full py-2.5 rounded-xl bg-[#271406] hover:bg-[#3b2219] text-amber-200 font-extrabold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <MapPin size={13} className="text-amber-400" />
-              <span>{lang === 'am' ? 'በጉግል ካርታ ይክፈቱ (ቦሌ ዓለም ሲኒማ)' : 'Open in Google Maps (Around Alem Cinema)'}</span>
+              <span>{lang === 'am' ? 'በጉግል ካርታ ይክፈቱ' : 'Open in Google Maps'}</span>
             </a>
           </div>
         </div>

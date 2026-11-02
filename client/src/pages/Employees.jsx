@@ -132,7 +132,7 @@ export default function Employees() {
       setModalOpen(false);
       load();
       try {
-        localStorage.setItem('baba_roti_employees_updated', Date.now().toString());
+        localStorage.setItem('bloom_employees_updated', Date.now().toString());
       } catch (_) { }
     } catch (err) {
       setFormErr(err.response?.data?.message || 'Failed to save.');
@@ -147,7 +147,7 @@ export default function Employees() {
       setDeleteId(null);
       load();
       try {
-        localStorage.setItem('baba_roti_employees_updated', Date.now().toString());
+        localStorage.setItem('bloom_employees_updated', Date.now().toString());
       } catch (_) { }
     } catch (err) {
       alert(err.response?.data?.message || 'Delete failed.');

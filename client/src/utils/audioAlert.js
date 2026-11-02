@@ -142,3 +142,4 @@ export function triggerWaiterCallAlert({ tableNo, action = 'call_waiter', custom
 
   return true;
 }
+

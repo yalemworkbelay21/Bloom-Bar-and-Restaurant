@@ -57,3 +57,4 @@ export function getLocalizedProductName(product = {}, lang = 'en') {
   }
   return product.name || '';
 }
+

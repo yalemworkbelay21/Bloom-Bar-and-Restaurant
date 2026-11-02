@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Setting = require('../models/Setting');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'baba_roti_cafe_super_secret_jwt_key_2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'bloom_bar_restaurant_jwt_key_2024';
 
 const DEFAULT_ROLE_PERMISSIONS = {
   recordGoods:      { storekeeper: true,  cashier: false, waiter: false, supervisor: true,  manager: true,  admin: true },

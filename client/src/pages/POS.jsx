@@ -53,7 +53,7 @@ export default function POS() {
   // Instant Cache Restoration (0ms initial load)
   const [products, setProducts] = useState(() => {
     try {
-      const cached = localStorage.getItem("baba_roti_pos_products_cache");
+      const cached = localStorage.getItem("bloom_pos_products_cache");
       return cached ? JSON.parse(cached) : [];
     } catch (_) {
       return [];
@@ -61,7 +61,7 @@ export default function POS() {
   });
   const [categories, setCategories] = useState(() => {
     try {
-      const cached = localStorage.getItem("baba_roti_pos_categories_cache");
+      const cached = localStorage.getItem("bloom_pos_categories_cache");
       return cached ? JSON.parse(cached) : [];
     } catch (_) {
       return [];
@@ -76,7 +76,7 @@ export default function POS() {
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [waiters, setWaiters] = useState(() => {
     try {
-      const cached = localStorage.getItem("baba_roti_pos_waiters_cache");
+      const cached = localStorage.getItem("bloom_pos_waiters_cache");
       return cached ? JSON.parse(cached) : [];
     } catch (_) {
       return [];
@@ -105,7 +105,7 @@ export default function POS() {
   // If we have cached products, start with loading=false so the UI appears instantly
   const [loading, setLoading] = useState(() => {
     try {
-      const cached = localStorage.getItem("baba_roti_pos_products_cache");
+      const cached = localStorage.getItem("bloom_pos_products_cache");
       return !cached || JSON.parse(cached).length === 0;
     } catch (_) {
       return true;
@@ -114,7 +114,7 @@ export default function POS() {
 
   const [settings, setSettings] = useState(() => {
     try {
-      const cached = localStorage.getItem("baba_roti_pos_settings_cache");
+      const cached = localStorage.getItem("bloom_pos_settings_cache");
       return cached
         ? JSON.parse(cached)
         : {
@@ -213,7 +213,7 @@ export default function POS() {
       const parsedWaiters = parseWaitersFromEmployees(allEmployees);
       setWaiters(parsedWaiters);
       try {
-        localStorage.setItem("baba_roti_pos_waiters_cache", JSON.stringify(parsedWaiters));
+        localStorage.setItem("bloom_pos_waiters_cache", JSON.stringify(parsedWaiters));
       } catch (_) { }
       if (notify) showToast(`Found ${parsedWaiters.length} waiter(s)`);
       return parsedWaiters;
@@ -234,7 +234,7 @@ export default function POS() {
   // Real-time automatic detection: detect when staff are registered or edited in other tabs/windows
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === "baba_roti_employees_updated" || e.key === "baba_roti_pos_waiters_cache") {
+      if (e.key === "bloom_employees_updated" || e.key === "bloom_pos_waiters_cache") {
         refreshWaiters(false);
       }
     };
@@ -276,8 +276,8 @@ export default function POS() {
         const cats = ["All", ...new Set(prods.map((p) => p.category || "General").filter(Boolean))];
         setCategories(cats);
         try {
-          localStorage.setItem("baba_roti_pos_products_cache", JSON.stringify(prods));
-          localStorage.setItem("baba_roti_pos_categories_cache", JSON.stringify(cats));
+          localStorage.setItem("bloom_pos_products_cache", JSON.stringify(prods));
+          localStorage.setItem("bloom_pos_categories_cache", JSON.stringify(cats));
         } catch (_) { }
       }
 
@@ -294,7 +294,7 @@ export default function POS() {
         };
         setSettings(newSettings);
         try {
-          localStorage.setItem("baba_roti_pos_settings_cache", JSON.stringify(newSettings));
+          localStorage.setItem("bloom_pos_settings_cache", JSON.stringify(newSettings));
         } catch (_) { }
 
         // Auto-initialize service charge if enabled and not already explicitly set
@@ -309,7 +309,7 @@ export default function POS() {
       const parsedWaiters = parseWaitersFromEmployees(allEmployees);
       setWaiters(parsedWaiters);
       try {
-        localStorage.setItem("baba_roti_pos_waiters_cache", JSON.stringify(parsedWaiters));
+        localStorage.setItem("bloom_pos_waiters_cache", JSON.stringify(parsedWaiters));
       } catch (_) { }
     } catch (e) {
       // Soft fail: cached data remains intact
