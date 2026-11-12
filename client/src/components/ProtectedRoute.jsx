@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ModuleLocked from './ui/ModuleLocked';
@@ -11,8 +11,17 @@ import ModuleLocked from './ui/ModuleLocked';
  */
 const ProtectedRoute = ({ children, roles, capability, module: moduleProp }) => {
   const { user, loading, can, isModuleLicensed, hasRole } = useAuth();
+  const [safetyTimeoutPassed, setSafetyTimeoutPassed] = useState(false);
 
-  if (loading) {
+  // Safety watchdog: clear spinner if loading hangs over 1.2s
+  useEffect(() => {
+    if (loading) {
+      const t = setTimeout(() => setSafetyTimeoutPassed(true), 1200);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
+
+  if (loading && !safetyTimeoutPassed) {
     return (
       <div className="flex h-screen items-center justify-center bg-ink-50">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-ink-200 border-t-brass-400" />
@@ -28,7 +37,7 @@ const ProtectedRoute = ({ children, roles, capability, module: moduleProp }) => 
   }
 
   // Module licensing gate: dev role always bypasses
-  if (moduleProp && !isModuleLicensed(moduleProp)) {
+  if (moduleProp && typeof isModuleLicensed === 'function' && !isModuleLicensed(moduleProp)) {
     return <ModuleLocked />;
   }
 

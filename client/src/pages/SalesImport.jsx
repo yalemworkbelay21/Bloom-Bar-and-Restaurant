@@ -1129,6 +1129,18 @@ export default function SalesImport() {
                   <span className="text-right">Total Amount</span>
                   <span />
                 </div>
+                {/* Master datalists for fast two-way autocomplete */}
+                <datalist id="manual-products-datalist">
+                  {products.map(p => (
+                    <option key={p._id} value={p.name}>{p.code ? `[${p.code}] ` : ''}{p.name}</option>
+                  ))}
+                </datalist>
+                <datalist id="manual-codes-datalist">
+                  {products.filter(p => p.code).map(p => (
+                    <option key={p._id} value={p.code}>{p.name}</option>
+                  ))}
+                </datalist>
+
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {manualRows.map((row) => (
                     <div key={row._id} className="grid gap-2 items-center"
@@ -1137,6 +1149,7 @@ export default function SalesImport() {
                       <input value={row.code}
                         onChange={e => updateManualRow(row._id, 'code', e.target.value)}
                         onBlur={e => handleCodeBlur(row._id, e.target.value)}
+                        list="manual-codes-datalist"
                         placeholder="P-0022"
                         className="rounded-lg border border-ink-200 px-2 py-2 text-xs outline-none focus:border-blue-500 font-mono" />
 
@@ -1144,14 +1157,9 @@ export default function SalesImport() {
                       <div className="relative">
                         <input value={row.name}
                           onChange={e => updateManualRow(row._id, 'name', e.target.value)}
-                          list={`prod-list-${row._id}`}
+                          list="manual-products-datalist"
                           placeholder="Select or type product name…"
                           className="w-full rounded-lg border border-ink-200 px-2 py-2 text-xs outline-none focus:border-blue-500" />
-                        <datalist id={`prod-list-${row._id}`}>
-                          {products.map(p => (
-                            <option key={p._id} value={p.name}>{p.code ? `[${p.code}] ` : ''}{p.name}</option>
-                          ))}
-                        </datalist>
                       </div>
                       {/* Qty */}
                       <input type="number" step="0.5" min="0.5" value={row.qty}

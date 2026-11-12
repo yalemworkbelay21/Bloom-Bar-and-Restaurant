@@ -406,6 +406,7 @@ const getSalesRecords = asyncHandler(async (req, res) => {
 });
 
 // ── DELETE /api/analytics/records/:id ─────────────────────────────────
+// Safe Batch Deletion with Automatic Stock Reversal
 const deleteSalesRecord = asyncHandler(async (req, res) => {
   const record = await SalesRecord.findById(req.params.id);
   if (!record) {
@@ -413,13 +414,38 @@ const deleteSalesRecord = asyncHandler(async (req, res) => {
     throw new Error('Sales record not found');
   }
 
-  // If a stock transaction exists, optionally delete or leave audit
+  // Restore any deducted raw materials back to live inventory
   if (record.stockTransaction) {
-    await StockTransaction.findByIdAndDelete(record.stockTransaction);
+    try {
+      const txn = await StockTransaction.findById(record.stockTransaction);
+      if (txn && Array.isArray(txn.items) && txn.items.length > 0) {
+        const restoreOps = txn.items
+          .filter((it) => it.material && Number(it.quantity) > 0)
+          .map((it) => ({
+            updateOne: {
+              filter: { _id: it.material },
+              update: { $inc: { currentStock: Number(it.quantity) } },
+            },
+          }));
+
+        if (restoreOps.length > 0) {
+          await RawMaterial.bulkWrite(restoreOps);
+        }
+      }
+      await StockTransaction.findByIdAndDelete(record.stockTransaction);
+    } catch (reversalErr) {
+      console.warn('[SalesRecordDelete] Stock reversal warning:', reversalErr.message);
+    }
   }
 
   await record.deleteOne();
-  res.json({ message: 'Sales record deleted successfully' });
+
+  try {
+    const { invalidateDashboardCache } = require('./dashboardController');
+    invalidateDashboardCache();
+  } catch (_) {}
+
+  res.json({ message: 'Sales record deleted and raw material stock successfully reversed.' });
 });
 
 module.exports = {

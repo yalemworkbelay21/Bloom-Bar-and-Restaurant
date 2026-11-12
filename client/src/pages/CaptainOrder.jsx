@@ -238,6 +238,16 @@ export default function CaptainOrder() {
   });
 
   // KPI Calculations
+  const isAwaitingWaiter = (o) => Boolean(
+    o && (
+      o.status === "pending_approval" ||
+      o.waiterApproval?.status === "pending" ||
+      (typeof o.waiterName === "string" && o.waiterName.toLowerCase().includes("pending approval"))
+    ) && o.status !== "cancelled" && o.status !== "voided" && o.status !== "paid"
+  );
+
+  const pendingOrders = orders.filter(isAwaitingWaiter);
+  const pendingCount = pendingOrders.length;
   const totalCount = orders.length;
   const heldCount = orders.filter((o) => o.status === "held").length;
   const kitchenCount = orders.filter((o) => o.status === "sent_to_kitchen").length;
@@ -766,7 +776,7 @@ export default function CaptainOrder() {
       {/* ── REPORT TABLE ─────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
         {/* ── Awaiting Waiter Table Verification Banner (Security Check) ── */}
-        {orders.filter((o) => o.status === "pending_approval").length > 0 && (
+        {pendingOrders.length > 0 && (
           <div style={{
             background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
             border: "2px solid #fde68a",
@@ -780,7 +790,7 @@ export default function CaptainOrder() {
                 <span style={{ fontSize: 22 }}>⚠️</span>
                 <div>
                   <h3 style={{ fontSize: 14, fontWeight: 900, color: "#92400e", margin: 0 }}>
-                    {orders.filter((o) => o.status === "pending_approval").length} Customer QR Order(s) Awaiting Waiter Table Verification
+                    {pendingOrders.length} Customer QR Order(s) Awaiting Waiter Table Verification
                   </h3>
                   <p style={{ fontSize: 11.5, color: "#b45309", margin: "2px 0 0 0", fontWeight: 600 }}>
                     Security Check: Please confirm customer presence at the table before approving to prevent remote or prank orders.
@@ -807,7 +817,7 @@ export default function CaptainOrder() {
               gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
               gap: 12,
             }}>
-              {orders.filter((o) => o.status === "pending_approval").map((o) => (
+              {pendingOrders.map((o) => (
                 <div
                   key={o._id}
                   style={{
@@ -1142,7 +1152,7 @@ export default function CaptainOrder() {
                             </button>
 
                             {/* Accept & Decline QR Order if pending approval */}
-                            {o.status === "pending_approval" && (
+                            {isAwaitingWaiter(o) && (
                               <>
                                 <button
                                   type="button"

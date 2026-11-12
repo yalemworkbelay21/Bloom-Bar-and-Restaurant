@@ -26,13 +26,15 @@ import DigitalMenu from './pages/DigitalMenu';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SessionTimeoutProvider } from './context/SessionTimeoutContext';
 import SessionTimeoutModal from './components/common/SessionTimeoutModal';
+import { LanguageProvider } from './context/LanguageContext';
 
 function App() {
   return (
     <ErrorBoundary>
-      <SessionTimeoutProvider>
-        <SessionTimeoutModal />
-        <Routes>
+      <LanguageProvider>
+        <SessionTimeoutProvider>
+          <SessionTimeoutModal />
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/menu" element={<DigitalMenu />} />
 
@@ -147,7 +149,8 @@ function App() {
           </Route>
         </Routes>
       </SessionTimeoutProvider>
-    </ErrorBoundary>
+    </LanguageProvider>
+  </ErrorBoundary>
   );
 }
 

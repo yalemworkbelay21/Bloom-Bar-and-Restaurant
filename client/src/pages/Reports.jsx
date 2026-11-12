@@ -227,6 +227,10 @@ function InventoryCountPanel() {
       const r = await api.patch(`/inventory-count/${activeCount._id}/lines`, { lines });
       setActiveCount(r.data.count);
       setEdits({});
+      if (r.data.stockUpdated) {
+        setApplySuccess('✓ Physical count saved and Live Raw Materials Stock directly updated!');
+        setTimeout(() => setApplySuccess(''), 7000);
+      }
     } catch (e) {
       setSaveError(e.response?.data?.message || 'Save failed');
     } finally {
@@ -623,11 +627,10 @@ function InventoryCountPanel() {
                   onClick={handleApplyStock}
                   disabled={applyingStock || saving}
                   title="Directly update live Raw Materials Current Stock to match this physical count"
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow transition cursor-pointer ${
-                    activeCount.stockApplied
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow transition cursor-pointer ${activeCount.stockApplied
                       ? 'bg-indigo-700 hover:bg-indigo-800 text-white'
                       : 'bg-indigo-600 hover:bg-indigo-700 text-white ring-2 ring-indigo-300'
-                  }`}
+                    }`}
                 >
                   <CheckCircle2 size={13} className={applyingStock ? 'animate-spin' : ''} />
                   <span>{applyingStock ? 'Updating Stock…' : (activeCount.stockApplied ? 'Re-Apply Live Stock' : 'Apply Count to Stock')}</span>
@@ -794,6 +797,18 @@ function InventoryCountPanel() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-white/70">{counted}/{total} counted</span>
+                {counted > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleApplyStock(); }}
+                    disabled={applyingStock || saving}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold shadow-xs transition flex items-center gap-1 cursor-pointer"
+                    title="Apply physical counts directly to live Raw Materials Current Stock"
+                  >
+                    <CheckCircle2 size={12} className={applyingStock ? 'animate-spin' : ''} />
+                    <span>{applyingStock ? 'Updating Stock…' : (activeCount.stockApplied ? '✓ Stock Synchronized' : 'Apply to Current Stock')}</span>
+                  </button>
+                )}
                 {expandedStores[activeCount.storeLocation]
                   ? <ChevronUp size={16} className="text-white" />
                   : <ChevronDown size={16} className="text-white" />
@@ -2073,14 +2088,14 @@ export default function Reports({ defaultTab } = {}) {
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap">
                               <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${row.voucherType === 'pos_sale'
-                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                  : row.voucherType === 'manual_sale'
-                                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                    : row.voucherType === 'sales_import'
-                                      ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                      : ['cash_grv', 'credit_grv', 'fresh_bazaar', 'pos_adjustment'].includes(row.voucherType)
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : row.voucherType === 'manual_sale'
+                                  ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                  : row.voucherType === 'sales_import'
+                                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                    : ['cash_grv', 'credit_grv', 'fresh_bazaar', 'pos_adjustment'].includes(row.voucherType)
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                      : 'bg-rose-50 text-rose-700 border border-rose-200'
                                 }`}>
                                 {VOUCHER_LABELS[row.voucherType] || row.voucherType}
                               </span>

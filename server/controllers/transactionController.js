@@ -532,7 +532,7 @@ const advanceTransaction = asyncHandler(async (req, res) => {
 // ── POST /api/transactions/import-sales ──────────────────────────────
 // Enhanced: matches by product code OR name, deducts stock if matched, records complete sold POS products list
 const importSales = asyncHandler(async (req, res) => {
-  const { sales, notes, reference, saleDate } = req.body;
+  const { sales, notes, reference, saleDate, force } = req.body;
   if (!sales || !sales.length) {
     res.status(400);
     throw new Error('No sales data provided');
@@ -541,68 +541,111 @@ const importSales = asyncHandler(async (req, res) => {
   const Product     = require('../models/Product');
   const SalesRecord = require('../models/SalesRecord');
 
-  const escapeRegex = (s) => (s ? String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '');
+  // ── Smart Duplicate Check ──
+  const isUniqueTxnCode = (c) => {
+    if (!c) return false;
+    const str = String(c).trim();
+    return /^cs_/i.test(str) || /^ord[-_]/i.test(str) || /^inv[-_]/i.test(str) || /_desktop/i.test(str);
+  };
+
+  const incomingCodes = sales.map((s) => String(s.productCode || '').trim()).filter(Boolean);
+  const targetDate = saleDate ? new Date(saleDate) : new Date();
+  const startOfDay = new Date(targetDate); startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(targetDate); endOfDay.setHours(23, 59, 59, 999);
+
+  const queryFilters = [];
+  const uniqueTxnCodes = incomingCodes.filter(isUniqueTxnCode);
+  if (uniqueTxnCodes.length > 0) {
+    queryFilters.push({ 'lines.productCode': { $in: uniqueTxnCodes } });
+  }
+  if (incomingCodes.length > 0) {
+    queryFilters.push({
+      saleDate: { $gte: startOfDay, $lte: endOfDay },
+      'lines.productCode': { $in: incomingCodes },
+    });
+  }
+
+  let duplicateNotice = null;
+  if (queryFilters.length > 0 && !force && !req.query.force) {
+    const existingRecord = await SalesRecord.findOne({ $or: queryFilters }).lean();
+    if (existingRecord) {
+      const match = (existingRecord.lines || []).find((l) => incomingCodes.includes(l.productCode));
+      duplicateNotice = `Possible duplicate import detected: Code "${match?.productCode || 'N/A'}" was already imported in batch on ${new Date(existingRecord.saleDate).toLocaleDateString()}.`;
+      if (req.query.checkOnly) {
+        return res.json({ isDuplicate: true, message: duplicateNotice, existingBatchId: existingRecord._id });
+      }
+    }
+  }
+  if (req.query.checkOnly) {
+    return res.json({ isDuplicate: false });
+  }
+
+  // ── 1. Index everything in-memory for instant O(1) lookups ──
+  const [allMaterials, allProducts] = await Promise.all([
+    RawMaterial.find().lean(),
+    Product.find().populate({ path: 'ingredients.material', model: 'RawMaterial' }).lean(),
+  ]);
+
+  const rawMaterialById = new Map();
+  const rawMaterialByCode = new Map();
+  const rawMaterialByName = new Map();
+  allMaterials.forEach((m) => {
+    rawMaterialById.set(String(m._id), m);
+    if (m.code) rawMaterialByCode.set(String(m.code).trim().toLowerCase(), m);
+    if (m.name) rawMaterialByName.set(String(m.name).trim().toLowerCase(), m);
+  });
+
+  const productByCode = new Map();
+  const productByName = new Map();
+  allProducts.forEach((p) => {
+    if (p.code) {
+      const c = String(p.code).trim().toLowerCase();
+      productByCode.set(c, p);
+      productByCode.set(c.replace(/-+$/, ''), p);
+    }
+    if (p.name) productByName.set(String(p.name).trim().toLowerCase(), p);
+  });
 
   const materialDeductions = {};
   const saleLines = [];
   const allSoldProducts = [];
   const notFound  = [];
 
+  // ── 2. Fast in-memory processing loop with safe string coercion ──
   for (const sale of sales) {
-    const { productName, productCode, quantity, revenue, unitPrice } = sale;
-    const nameStr = (productName || '').trim();
-    const codeStr = (productCode || '').trim();
+    const nameStr = String(sale.productName || '').trim();
+    const codeStr = String(sale.productCode || '').trim();
 
     if (!nameStr && !codeStr) continue;
 
-    const qty = Math.max(0.001, Number(quantity) || 1);
-    const rev = Number(revenue) || 0;
-    const price = Number(unitPrice) || 0;
+    const qty = Math.max(0.001, Number(sale.quantity) || 1);
+    const rev = Number(sale.revenue) || 0;
+    const price = Number(sale.unitPrice) || 0;
     const lineIngredients = [];
 
-    // 1. Try to find in Product by code or name (isActive only)
-    let product = null;
-    if (codeStr) {
-      // Match exact code OR code with trailing dashes (e.g. stored as "P-0001-")
-      const escapedCode = escapeRegex(codeStr);
-      product = await Product.findOne({
-        isActive: true,
-        code: { $regex: `^${escapedCode}-*$`, $options: 'i' },
-      }).populate({ path: 'ingredients.material', model: 'RawMaterial' });
-    }
-    if (!product && nameStr) {
-      product = await Product.findOne({
-        isActive: true,
-        name: new RegExp(`^${escapeRegex(nameStr)}$`, 'i'),
-      }).populate({ path: 'ingredients.material', model: 'RawMaterial' });
-    }
-    // Fallback: partial match — code contains the term or name contains the term
-    if (!product && (codeStr || nameStr)) {
-      const term = escapeRegex(codeStr || nameStr);
-      product = await Product.findOne({
-        isActive: true,
-        $or: [
-          { code: { $regex: `^${term}-*$`, $options: 'i' } },
-          { name: { $regex: `^${term}$`,   $options: 'i' } },
-        ],
-      }).populate({ path: 'ingredients.material', model: 'RawMaterial' });
-    }
+    // O(1) in-memory lookup
+    const codeClean = codeStr.toLowerCase().replace(/-+$/, '');
+    const nameClean = nameStr.toLowerCase();
+
+    let product = (codeStr ? (productByCode.get(codeStr.toLowerCase()) || productByCode.get(codeClean)) : null)
+      || (nameStr ? productByName.get(nameClean) : null);
 
     if (product) {
       let cogs = 0;
-      // Re-fetch ingredients with explicit populate to ensure materials load
-      // even if the shorthand populate silently missed them
       const ingList = product.ingredients || [];
       const hasRecipe = ingList.length > 0;
+
       if (hasRecipe) {
         for (const ing of ingList) {
-          // ing.material is populated; if null, fetch manually by ID
           let mat = ing.material;
           if (!mat && ing._doc?.material) {
-            mat = await RawMaterial.findById(ing._doc.material).lean();
+            mat = rawMaterialById.get(String(ing._doc.material));
+          } else if (mat?._id) {
+            mat = rawMaterialById.get(String(mat._id)) || mat;
           }
           if (!mat) continue;
-          const matId     = mat._id.toString();
+
+          const matId     = String(mat._id);
           const deductQty = ing.quantity * qty;
           const ingCost   = (mat.unitCost || 0) * deductQty;
           cogs += ingCost;
@@ -637,7 +680,7 @@ const importSales = asyncHandler(async (req, res) => {
         revenue:         lineRev,
         cogs,
         grossProfit:     lineRev - cogs,
-        matchStatus:     (hasRecipe && lineIngredients.length > 0) ? 'recipe_deducted' : (hasRecipe ? 'no_recipe' : 'no_recipe'),
+        matchStatus:     (hasRecipe && lineIngredients.length > 0) ? 'recipe_deducted' : 'no_recipe',
         ingredientsUsed: lineIngredients,
       };
 
@@ -646,26 +689,12 @@ const importSales = asyncHandler(async (req, res) => {
       continue;
     }
 
-    // 2. Try RawMaterial directly
-    let material = null;
-    if (codeStr) {
-      material = await RawMaterial.findOne({ code: new RegExp(`^${escapeRegex(codeStr)}$`, 'i') });
-    }
-    if (!material && nameStr) {
-      material = await RawMaterial.findOne({ name: new RegExp(`^${escapeRegex(nameStr)}$`, 'i') });
-    }
-    if (!material && (codeStr || nameStr)) {
-      const term = (nameStr || codeStr);
-      material = await RawMaterial.findOne({
-        $or: [
-          { code: new RegExp(`^${escapeRegex(term)}$`, 'i') },
-          { name: new RegExp(`^${escapeRegex(term)}$`, 'i') },
-        ]
-      });
-    }
+    // 2. Direct match to RawMaterial in-memory
+    let material = (codeStr ? (rawMaterialByCode.get(codeStr.toLowerCase()) || rawMaterialByCode.get(codeClean)) : null)
+      || (nameStr ? rawMaterialByName.get(nameClean) : null);
 
     if (material) {
-      const matId   = material._id.toString();
+      const matId   = String(material._id);
       const ingCost = (material.unitCost || 0) * qty;
       materialDeductions[matId] = (materialDeductions[matId] || 0) + qty;
       lineIngredients.push({
@@ -705,7 +734,7 @@ const importSales = asyncHandler(async (req, res) => {
       continue;
     }
 
-    // 3. Unmatched product
+    // 3. Unmatched product (include in sales record so financial reports reflect 100% of receipts)
     const identifier = nameStr || codeStr;
     notFound.push(identifier);
 
@@ -718,7 +747,7 @@ const importSales = asyncHandler(async (req, res) => {
       productCode:     codeStr,
       productId:       null,
       category:        'Unmatched',
-      parentCategory:  '—',
+      parentCategory:  'FOOD',
       uom:             'Pcs',
       quantitySold:    qty,
       sellingPrice:    lineSellingPrice,
@@ -728,6 +757,8 @@ const importSales = asyncHandler(async (req, res) => {
       matchStatus:     'unmatched',
       ingredientsUsed: [],
     };
+
+    saleLines.push(unmatchedLine);
     allSoldProducts.push(unmatchedLine);
   }
 
@@ -751,14 +782,34 @@ const importSales = asyncHandler(async (req, res) => {
     importedBy:  req.user._id,
   });
 
-  // Create stock transaction if there are materials to deduct
-  let transaction = null;
-  const resolvedItems = [];
-  for (const [matId, qty] of Object.entries(materialDeductions)) {
-    if (qty <= 0) continue;
-    const mat = await RawMaterial.findById(matId);
-    if (mat) resolvedItems.push({ material: mat._id, quantity: qty, unitCost: mat.unitCost || 0, totalCost: (mat.unitCost || 0) * qty, _doc: mat });
+  // ── 3. Single atomic bulk write for all stock deductions ──
+  const bulkUpdates = Object.entries(materialDeductions)
+    .filter(([_, deductQty]) => Number(deductQty) > 0)
+    .map(([matId, deductQty]) => ({
+      updateOne: {
+        filter: { _id: matId },
+        update: { $inc: { currentStock: -Number(deductQty) } },
+      },
+    }));
+
+  if (bulkUpdates.length > 0) {
+    await RawMaterial.bulkWrite(bulkUpdates);
   }
+
+  // Create single StockTransaction for audit trail
+  let transaction = null;
+  const resolvedItems = Object.entries(materialDeductions)
+    .filter(([_, qty]) => Number(qty) > 0)
+    .map(([matId, qty]) => {
+      const mat = rawMaterialById.get(matId);
+      const unitCost = mat?.unitCost || 0;
+      return {
+        material:  mat?._id || matId,
+        quantity:  Number(qty),
+        unitCost,
+        totalCost: Number((unitCost * qty).toFixed(2)),
+      };
+    });
 
   if (resolvedItems.length > 0) {
     const isManual = Boolean(notes?.toLowerCase().includes('manual') || req.body.isManual);
@@ -770,7 +821,7 @@ const importSales = asyncHandler(async (req, res) => {
       voucherType: resolvedVoucherType,
       voucherNo:   await generateVoucherNo(resolvedVoucherType),
       type:        'out',
-      items:       resolvedItems.map(({ material, quantity, unitCost, totalCost }) => ({ material, quantity, unitCost, totalCost })),
+      items:       resolvedItems,
       material:    resolvedItems[0].material,
       quantity:    resolvedItems[0].quantity,
       unitCost:    resolvedItems[0].unitCost,
@@ -786,11 +837,6 @@ const importSales = asyncHandler(async (req, res) => {
 
     salesRecord.stockTransaction = transaction._id;
     await salesRecord.save();
-
-    for (const item of resolvedItems) {
-      item._doc.currentStock -= item.quantity;
-      await item._doc.save();
-    }
   }
 
   invalidateDashboardCache();
@@ -805,17 +851,15 @@ const importSales = asyncHandler(async (req, res) => {
       grossProfit,
       profitMargin: profitMargin.toFixed(1) + '%',
       totalSoldProducts: allSoldProducts.length,
-      matchedCount: saleLines.length,
+      matchedCount: saleLines.length - notFound.length,
       unmatchedCount: notFound.length,
     },
     items: allSoldProducts,
     unmatchedProducts: notFound,
+    duplicateNotice,
   });
 });
 
-// ── POST /api/transactions/parse-image-sales ─────────────────────────
-// Accepts a base64-encoded image of a POS report, runs OCR via ocr.space,
-// parses the resulting text for article codes / names / quantities / amounts.
 const parseImageSales = asyncHandler(async (req, res) => {
   const { imageBase64, mimeType = 'image/jpeg' } = req.body;
   if (!imageBase64) { res.status(400); throw new Error('No image data provided'); }

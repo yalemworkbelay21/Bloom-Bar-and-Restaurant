@@ -166,9 +166,9 @@ exports.getStores = asyncHandler(async (req, res) => {
 exports.listCounts = asyncHandler(async (req, res) => {
   const { year, month, store, status } = req.query;
   const filter = {};
-  if (year)   filter.periodYear  = Number(year);
-  if (month)  filter.periodMonth = Number(month);
-  if (store)  filter.storeLocation = store;
+  if (year) filter.periodYear = Number(year);
+  if (month) filter.periodMonth = Number(month);
+  if (store) filter.storeLocation = store;
   if (status) filter.status = status;
 
   const counts = await InventoryCount.find(filter)
@@ -203,7 +203,7 @@ exports.getCount = asyncHandler(async (req, res) => {
 // Helper to synchronize lines with live system stock and movements
 async function syncCountDoc(doc) {
   const periodStart = new Date(doc.periodYear, doc.periodMonth - 1, 1);
-  const periodEnd   = new Date(doc.periodYear, doc.periodMonth, 0, 23, 59, 59, 999);
+  const periodEnd = new Date(doc.periodYear, doc.periodMonth, 0, 23, 59, 59, 999);
 
   const materials = await RawMaterial.find({
     storeLocation: doc.storeLocation,
@@ -232,14 +232,14 @@ async function syncCountDoc(doc) {
       line.outQty !== bal.outQty ||
       line.wac !== wac
     ) {
-      line.beginBalance  = bal.beginBalance;
-      line.inQty         = bal.inQty;
-      line.outQty        = bal.outQty;
+      line.beginBalance = bal.beginBalance;
+      line.inQty = bal.inQty;
+      line.outQty = bal.outQty;
       line.systemBalance = bal.systemBalance;
-      line.wac           = wac;
+      line.wac = wac;
 
       if (line.isCounted && line.physicalCount !== null) {
-        line.variance      = Number((line.physicalCount - line.systemBalance).toFixed(4));
+        line.variance = Number((line.physicalCount - line.systemBalance).toFixed(4));
         line.varianceValue = Number((line.variance * (line.wac || 0)).toFixed(2));
         if (line.variance > 0) line.varianceType = 'positive';
         else if (line.variance < 0) line.varianceType = 'negative';
@@ -257,20 +257,20 @@ async function syncCountDoc(doc) {
       const wac = await computeWAC(mat._id, periodEnd, mat.unitCost);
 
       doc.lines.push({
-        material:      mat._id,
-        materialName:  mat.name,
-        unit:          mat.unit,
-        beginBalance:  bal.beginBalance,
-        inQty:         bal.inQty,
-        outQty:        bal.outQty,
+        material: mat._id,
+        materialName: mat.name,
+        unit: mat.unit,
+        beginBalance: bal.beginBalance,
+        inQty: bal.inQty,
+        outQty: bal.outQty,
         systemBalance: bal.systemBalance,
         physicalCount: null,
-        variance:      0,
-        varianceType:  null,
+        variance: 0,
+        varianceType: null,
         wac,
         varianceValue: 0,
-        isCounted:     false,
-        note:          '',
+        isCounted: false,
+        note: '',
       });
       modified = true;
     }
@@ -326,7 +326,7 @@ exports.initializeCount = asyncHandler(async (req, res) => {
   }
 
   const periodStart = new Date(periodYear, periodMonth - 1, 1);
-  const periodEnd   = new Date(periodYear, periodMonth, 0, 23, 59, 59, 999);
+  const periodEnd = new Date(periodYear, periodMonth, 0, 23, 59, 59, 999);
 
   const materials = await RawMaterial.find({ storeLocation, isActive: true }).lean();
 
@@ -336,20 +336,20 @@ exports.initializeCount = asyncHandler(async (req, res) => {
       const wac = await computeWAC(mat._id, periodEnd, mat.unitCost);
 
       return {
-        material:      mat._id,
-        materialName:  mat.name,
-        unit:          mat.unit,
-        beginBalance:  bal.beginBalance,
-        inQty:         bal.inQty,
-        outQty:        bal.outQty,
+        material: mat._id,
+        materialName: mat.name,
+        unit: mat.unit,
+        beginBalance: bal.beginBalance,
+        inQty: bal.inQty,
+        outQty: bal.outQty,
         systemBalance: bal.systemBalance,
         physicalCount: null,
-        variance:      0,
-        varianceType:  null,
+        variance: 0,
+        varianceType: null,
         wac,
         varianceValue: 0,
-        isCounted:     false,
-        note:          '',
+        isCounted: false,
+        note: '',
       };
     })
   );
@@ -390,8 +390,8 @@ exports.updateLines = asyncHandler(async (req, res) => {
 
     if (upd.physicalCount !== undefined && upd.physicalCount !== null && upd.physicalCount !== '') {
       line.physicalCount = Number(upd.physicalCount);
-      line.isCounted     = true;
-      line.variance      = Number((line.physicalCount - line.systemBalance).toFixed(4));
+      line.isCounted = true;
+      line.variance = Number((line.physicalCount - line.systemBalance).toFixed(4));
       line.varianceValue = Number((line.variance * (line.wac || 0)).toFixed(2));
       if (line.variance > 0) line.varianceType = 'positive';
       else if (line.variance < 0) line.varianceType = 'negative';
@@ -401,9 +401,9 @@ exports.updateLines = asyncHandler(async (req, res) => {
   }
 
   // Recompute summary totals
-  doc.countedItems   = doc.lines.filter((l) => l.isCounted).length;
+  doc.countedItems = doc.lines.filter((l) => l.isCounted).length;
   doc.uncountedItems = doc.lines.length - doc.countedItems;
-  doc.totalItems     = doc.lines.length;
+  doc.totalItems = doc.lines.length;
   doc.positiveVariance = doc.lines
     .filter((l) => l.varianceType === 'positive')
     .reduce((s, l) => s + l.varianceValue, 0);
@@ -412,8 +412,36 @@ exports.updateLines = asyncHandler(async (req, res) => {
     .reduce((s, l) => s + l.varianceValue, 0);
   doc.netVarianceValue = doc.positiveVariance + doc.negativeVariance;
 
+  // ── Synchronize live RawMaterial.currentStock with the physical counts entered ──
+  const bulkMatUpdates = [];
+  for (const upd of updates) {
+    if (upd.physicalCount !== undefined && upd.physicalCount !== null && upd.physicalCount !== '') {
+      const targetStock = Number(upd.physicalCount);
+      if (!isNaN(targetStock) && targetStock >= 0) {
+        bulkMatUpdates.push({
+          updateOne: {
+            filter: { _id: upd.material },
+            update: { $set: { currentStock: targetStock } },
+          },
+        });
+      }
+    }
+  }
+
+  if (bulkMatUpdates.length > 0) {
+    await RawMaterial.bulkWrite(bulkMatUpdates);
+    doc.stockApplied = true;
+    doc.stockAppliedAt = new Date();
+    doc.stockAppliedBy = req.user?._id;
+    doc.stockAppliedByName = req.user?.name || 'Staff';
+    try {
+      const { invalidateDashboardCache } = require('./dashboardController');
+      invalidateDashboardCache();
+    } catch (_) {}
+  }
+
   await doc.save();
-  res.json({ count: doc });
+  res.json({ count: doc, stockUpdated: bulkMatUpdates.length > 0 });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -427,9 +455,17 @@ exports.submitCount = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: `Cannot submit a count in "${doc.status}" status` });
   }
 
-  doc.status      = 'submitted';
+  doc.status = 'submitted';
   doc.submittedBy = req.user._id;
   doc.submittedAt = new Date();
+
+  // Automatically apply physical counts to live stock on submit
+  try {
+    await applyPhysicalCountsToStock(doc, req.user);
+  } catch (err) {
+    console.warn('[InventoryCount] Auto-apply stock on submit:', err.message);
+  }
+
   await doc.save();
 
   tg.notifyInventoryCountSubmitted(doc, req.user);
@@ -565,7 +601,7 @@ async function applyPhysicalCountsToStock(doc, user) {
   try {
     const { invalidateDashboardCache } = require('./dashboardController');
     invalidateDashboardCache();
-  } catch (e) {}
+  } catch (e) { }
 
   doc.stockApplied = true;
   doc.stockAppliedAt = new Date();
@@ -623,17 +659,17 @@ exports.approveCount = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: `Cannot approve a count in "${doc.status}" status` });
   }
 
-  doc.status      = 'approved';
-  doc.approvedBy  = req.user._id;
-  doc.approvedAt  = new Date();
+  doc.status = 'approved';
+  doc.approvedBy = req.user._id;
+  doc.approvedAt = new Date();
   doc.closingDate = new Date();
 
   // Lock all lines: systemBalance becomes the physical count if not counted
   for (const line of doc.lines) {
     if (!line.isCounted) {
       line.physicalCount = line.systemBalance;
-      line.variance      = 0;
-      line.varianceType  = 'zero';
+      line.variance = 0;
+      line.varianceType = 'zero';
       line.varianceValue = 0;
     }
   }

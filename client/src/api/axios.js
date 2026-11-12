@@ -1,7 +1,20 @@
 import axios from 'axios';
 
+let apiBase = import.meta.env.VITE_API_URL || '/api';
+
+// On any production domain (Aletcloud, Render, VPS), never append ':5000' or route to localhost
+if (typeof window !== 'undefined' && window.location?.hostname) {
+  const host = window.location.hostname;
+  if (host !== 'localhost' && host !== '127.0.0.1') {
+    if (!apiBase || apiBase.includes('localhost') || apiBase.includes(':5000')) {
+      apiBase = '/api';
+    }
+  }
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: apiBase,
+  timeout: 60000, // 60s default timeout
 });
 
 api.interceptors.request.use((config) => {

@@ -63,18 +63,58 @@ const clearSettingsCache = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser]                       = useState(null);
-  const [rolePermissions, setRolePermissions]   = useState(DEFAULT_PERMISSIONS);
-  const [navVisibility,   setNavVisibility]     = useState(DEFAULT_NAV_VISIBILITY);
-  const [crudPermissions, setCrudPermissions]   = useState(DEFAULT_CRUD_PERMISSIONS);
-  const [licensedModules, setLicensedModules]   = useState(DEFAULT_LICENSED_MODULES);
+  // Synchronous hydration from localStorage for instant 0ms app boot
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('hotelStockAuth');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
 
-  // loading stays true until BOTH the user AND the server settings are resolved
-  const [loading, setLoading] = useState(true);
+  const [rolePermissions, setRolePermissions] = useState(() => {
+    try {
+      const cached = localStorage.getItem('hotelStockPermissions');
+      return cached ? JSON.parse(cached) : DEFAULT_PERMISSIONS;
+    } catch {
+      return DEFAULT_PERMISSIONS;
+    }
+  });
+
+  const [navVisibility, setNavVisibility] = useState(() => {
+    try {
+      const cached = localStorage.getItem('hotelStockNavVisibility');
+      return cached ? JSON.parse(cached) : DEFAULT_NAV_VISIBILITY;
+    } catch {
+      return DEFAULT_NAV_VISIBILITY;
+    }
+  });
+
+  const [crudPermissions, setCrudPermissions] = useState(() => {
+    try {
+      const cached = localStorage.getItem('hotelStockCrudPermissions');
+      return cached ? JSON.parse(cached) : DEFAULT_CRUD_PERMISSIONS;
+    } catch {
+      return DEFAULT_CRUD_PERMISSIONS;
+    }
+  });
+
+  const [licensedModules, setLicensedModules] = useState(() => {
+    try {
+      const cached = localStorage.getItem('hotelStockLicensedModules');
+      return cached ? JSON.parse(cached) : DEFAULT_LICENSED_MODULES;
+    } catch {
+      return DEFAULT_LICENSED_MODULES;
+    }
+  });
+
+  // Never block screen on app boot
+  const [loading, setLoading] = useState(false);
 
   const fetchPermissions = useCallback(async () => {
     try {
-      const res = await api.get('/settings');
+      const res = await api.get('/settings', { timeout: 4000 });
       if (res.data?.rolePermissions) {
         setRolePermissions(res.data.rolePermissions);
         localStorage.setItem('hotelStockPermissions', JSON.stringify(res.data.rolePermissions));
@@ -109,25 +149,11 @@ export const AuthProvider = ({ children }) => {
     return null;
   }, []);
 
-  // On mount: restore user from localStorage, then AWAIT fetchPermissions before
-  // clearing the loading flag. This prevents a flash of wrong nav items.
+  // Non-blocking background sync on mount
   useEffect(() => {
-    const init = async () => {
-      const stored = localStorage.getItem('hotelStockAuth');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setUser(parsed);
-          // Fetch server settings BEFORE showing the app
-          await fetchPermissions();
-        } catch {
-          localStorage.removeItem('hotelStockAuth');
-        }
-      }
-      // Only now allow the app to render
-      setLoading(false);
-    };
-    init();
+    if (localStorage.getItem('hotelStockAuth')) {
+      fetchPermissions().catch(() => {});
+    }
   }, [fetchPermissions]);
 
   const login = async (email, password, otpToken) => {

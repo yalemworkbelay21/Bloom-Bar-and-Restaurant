@@ -72,7 +72,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
+app.set('trust proxy', 1);
+app.use(cors({
+  origin: true,        // Reflect request origin dynamically to accept any authorized frontend
+  credentials: true,   // Allow cookies and Authorization headers
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 if (process.env.NODE_ENV !== 'production') app.use(morgan('dev'));
