@@ -48,6 +48,32 @@ connectDB()
   .then(async () => {
     await autoSeed();
     await migrateLocalUploads();
+
+    // Automatically reconcile live raw materials currentStock with any existing counted inventory
+    try {
+      const InventoryCount = require('./models/InventoryCount');
+      const RawMaterial = require('./models/RawMaterial');
+      const counts = await InventoryCount.find({ status: { $ne: 'voided' } }).lean();
+      for (const count of counts) {
+        const countedLines = (count.lines || []).filter(
+          (l) => l.isCounted && l.physicalCount !== null && Number(l.physicalCount) >= 0
+        );
+        if (countedLines.length > 0) {
+          const bulkOps = countedLines.map((l) => ({
+            updateOne: {
+              filter: { _id: l.material },
+              update: { $set: { currentStock: Number(l.physicalCount) } },
+            },
+          }));
+          if (bulkOps.length > 0) {
+            await RawMaterial.bulkWrite(bulkOps);
+            console.log(`[STARTUP] Reconciled live stock for ${bulkOps.length} materials from count: ${count.title || count.storeLocation}`);
+          }
+        }
+      }
+    } catch (icErr) {
+      console.warn('[STARTUP] Inventory count auto-sync warning:', icErr.message);
+    }
   })
   .catch((err) => {
     console.error('[DB] Startup connect error:', err.message);

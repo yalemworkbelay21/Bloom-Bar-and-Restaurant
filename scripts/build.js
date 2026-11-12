@@ -13,3 +13,4 @@ if (fs.existsSync(distIndex)) {
 console.log('[BUILD] Installing server production dependencies...');
 execSync('npm install --prefix server --omit=dev --no-audit --no-fund', { stdio: 'inherit' });
 console.log('[BUILD] ✓ Ready to start in seconds!');
+

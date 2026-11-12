@@ -437,7 +437,7 @@ exports.updateLines = asyncHandler(async (req, res) => {
     try {
       const { invalidateDashboardCache } = require('./dashboardController');
       invalidateDashboardCache();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   await doc.save();
