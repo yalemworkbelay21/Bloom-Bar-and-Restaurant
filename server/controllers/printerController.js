@@ -260,16 +260,23 @@ const relayPollEndpoint = asyncHandler(async (req, res) => {
 // Agent completion endpoint
 const relayCompleteEndpoint = asyncHandler(async (req, res) => {
   lastRelayAgentHeartbeat = Date.now();
-  const { jobId, result } = req.body;
+  const jobId = req.body?.jobId || req.params?.jobId;
+  const result = req.body?.result || req.body || { ok: true };
   if (!jobId) return res.status(400).json({ ok: false, error: 'jobId required' });
 
   const entry = pendingRelayJobs.get(jobId);
   if (entry) {
     clearTimeout(entry.timer);
     pendingRelayJobs.delete(jobId);
-    entry.resolve(result || { ok: true });
+    entry.resolve(result);
   }
   res.json({ ok: true });
+});
+
+// Agent heartbeat endpoint
+const relayHeartbeatEndpoint = asyncHandler(async (req, res) => {
+  lastRelayAgentHeartbeat = Date.now();
+  res.json({ ok: true, serverTime: Date.now() });
 });
 
 // Relay status endpoint
@@ -295,5 +302,6 @@ module.exports = {
   printTestPageEndpoint,
   relayPollEndpoint,
   relayCompleteEndpoint,
+  relayHeartbeatEndpoint,
   relayStatusEndpoint,
 };

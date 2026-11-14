@@ -136,6 +136,18 @@ const distPath = path.resolve(__dirname, '../client/dist');
 const distExists = require('fs').existsSync(path.join(distPath, 'index.html'));
 console.log('[STATIC] Frontend dist exists:', distExists, 'at', distPath);
 
+// Direct download for POS Print Agent zip package
+app.get(['/bloom-print-agent.zip', '/baba-roti-print-agent.zip', '/download/print-agent.zip'], (req, res) => {
+  const candidatePaths = [
+    path.join(__dirname, '../client/public/bloom-print-agent.zip'),
+    path.join(__dirname, '../client/dist/bloom-print-agent.zip'),
+  ];
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p)) return res.download(p, 'bloom-print-agent.zip');
+  }
+  res.status(404).send('Bloom Print Agent package not found');
+});
+
 if (distExists) {
   app.use(
     express.static(distPath, {

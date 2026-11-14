@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import api from "../api/axios";
 import { posPrint } from "../utils/posPrint";
+import { localPrintDispatcher } from "../utils/localPrintDispatcher";
 import {
   Search, Plus, Minus, Trash2, ChevronDown, X, Clock,
   UtensilsCrossed, ReceiptText, Printer, Check, CreditCard,
@@ -461,8 +462,7 @@ export default function POS() {
   // Errors are non-blocking — ordering always continues.
   const firePrinter = async (type, order, opts = {}) => {
     try {
-      const endpoint = type === 'kot' ? '/printers/action/kot' : '/printers/action/receipt';
-      await api.post(endpoint, { order, opts });
+      await localPrintDispatcher.dispatchPrint(type, order, { ...opts, fallbackBrowser: false });
     } catch (_) {
       // silent — printer errors must never block ordering
     }

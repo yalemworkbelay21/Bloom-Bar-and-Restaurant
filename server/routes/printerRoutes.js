@@ -13,6 +13,7 @@ const {
   printTestPageEndpoint,
   relayPollEndpoint,
   relayCompleteEndpoint,
+  relayHeartbeatEndpoint,
   relayStatusEndpoint,
 } = require('../controllers/printerController');
 
@@ -25,9 +26,11 @@ const localOrProtect = (req, res, next) => {
 };
 
 // Cloud Print Relay (communicates with local POS machine agent)
-router.get('/relay/poll',      relayPollEndpoint);
-router.post('/relay/complete', relayCompleteEndpoint);
-router.get('/relay/status',    relayStatusEndpoint);
+router.get('/relay/poll',                   relayPollEndpoint);
+router.post('/relay/complete',              relayCompleteEndpoint);
+router.post('/relay/jobs/:jobId/status',    relayCompleteEndpoint);
+router.post('/relay/heartbeat',             relayHeartbeatEndpoint);
+router.get('/relay/status',                 relayStatusEndpoint);
 
 // CRUD
 router.route('/').get(protect, getPrinters).post(protect, createPrinter);

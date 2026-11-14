@@ -36,6 +36,8 @@ import {
   Sparkles,
   QrCode,
   BarChart3,
+  Radio,
+  RefreshCw,
 } from 'lucide-react';
 import api from '../api/axios';
 import posPrint from '../utils/posPrint';
@@ -346,6 +348,9 @@ export default function Settings() {
   const [pingStatus, setPingStatus] = useState({}); // { [ip]: 'ok' | 'fail' | 'pending' }
   const [printTestStatus, setPrintTestStatus] = useState({}); // { [idOrIp]: 'ok' | 'fail' | 'pending' }
 
+  const [relayAgentInfo, setRelayAgentInfo] = useState({ online: false });
+  const [localBridgeInfo, setLocalBridgeInfo] = useState({ online: false });
+
   // Load printers from API (component-scoped so nav button can call it)
   const loadPrinters = async () => {
     setPrintersLoading(true);
@@ -354,6 +359,10 @@ export default function Settings() {
       setPrinters(Array.isArray(res.data) ? res.data : []);
     } catch (_) { }
     finally { setPrintersLoading(false); }
+
+    // Check Cloud Relay and Local Bridge
+    localPrintDispatcher.checkRelayStatus().then((r) => setRelayAgentInfo(r || { online: false })).catch(() => { });
+    localPrintDispatcher.checkLocalBridge().then((b) => setLocalBridgeInfo(b || { online: false })).catch(() => { });
   };
 
   // Telegram subscribers state (Admin)
@@ -3080,6 +3089,108 @@ export default function Settings() {
             {printerError && !showPrinterForm && (
               <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-600">
                 <AlertCircle size={16} className="flex-shrink-0" />{printerError}
+              </div>
+            )}
+
+            {/* ── Network Print Bridge & Cloud Dispatch Architecture ── */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-bold tracking-wider text-ink-400 uppercase">
+                  Network Print Bridge &amp; Cloud Dispatch Architecture
+                </p>
+                <button
+                  type="button"
+                  onClick={() => loadPrinters()}
+                  className="inline-flex items-center gap-1 text-[11px] text-violet-600 hover:text-violet-800 font-semibold"
+                >
+                  <RefreshCw size={11} /> Refresh Status
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-violet-100 bg-white p-3.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink-700 flex items-center gap-1.5">
+                      <Wifi size={13} className="text-violet-600" /> Direct RAW TCP (Port 9100)
+                    </span>
+                    <span className="rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-[10px] font-bold">
+                      ACTIVE
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-ink-400 mt-1">
+                    Parallel non-blocking dispatch with TCP FIN spooling &amp; 2.5s fail-fast timeout.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-violet-100 bg-white p-3.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink-700 flex items-center gap-1.5">
+                      <Printer size={13} className="text-indigo-600" /> Local Bridge (:9101)
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${localBridgeInfo.online ? 'bg-emerald-50 text-emerald-700' : 'bg-ink-100 text-ink-500'
+                      }`}>
+                      {localBridgeInfo.online ? 'ONLINE' : 'STANDBY'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-ink-400 mt-1">
+                    {localBridgeInfo.online
+                      ? 'Connected to local Bloom agent. Direct LAN print ready.'
+                      : 'Run start-printer-agent.bat locally for instant 0ms LAN print bridge.'}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-violet-100 bg-white p-3.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink-700 flex items-center gap-1.5">
+                      <Radio size={13} className="text-amber-600" /> Cloud Relay Agent
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${relayAgentInfo.online ? 'bg-emerald-50 text-emerald-700' : 'bg-ink-100 text-ink-500'
+                      }`}>
+                      {relayAgentInfo.online ? 'CONNECTED' : 'STANDBY'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-ink-400 mt-1">
+                    {relayAgentInfo.online
+                      ? `Agent online (${relayAgentInfo.agent?.agentName || 'Relay'}). Cloud-to-LAN active.`
+                      : 'Allows cloud servers (Render / Aletcloud) to print to local IP printers.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* If Agent is Offline, Show Helpful Action Banner */}
+            {(!localBridgeInfo.online && !relayAgentInfo.online) && (
+              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-amber-900 space-y-1.5">
+                    <p className="font-bold text-sm text-amber-950">Local Print Bridge Agent is not running on this PC</p>
+                    <p className="leading-relaxed">
+                      Your restaurant web app is deployed in the cloud (<strong>bloom-bar-and-restaurant-1.app.aletcloud.com</strong>). To allow the cloud to communicate with local network printers (like <code>192.168.8.222</code>), the local print bridge must be running on your POS computer.
+                    </p>
+                    <div className="pt-2 flex flex-wrap items-center gap-2.5">
+                      <span className="font-semibold text-amber-800">Quick Fix:</span>
+                      <span className="rounded-md bg-white border border-amber-300 px-2.5 py-1 font-mono text-[11px] text-ink-800">
+                        Double-click start-printer-agent.bat
+                      </span>
+                      <span className="text-ink-600">or run <strong>install-startup.bat</strong> (located in <code>A:\Bloom Africa Inventory\</code>)</span>
+                      <a
+                        href="/bloom-print-agent.zip"
+                        download="bloom-print-agent.zip"
+                        className="inline-flex items-center gap-1 rounded-lg bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 font-semibold px-2.5 py-1 text-[11px] transition shadow-xs"
+                        title="Download Print Agent package for other POS computers"
+                      >
+                        📥 Download Agent (.zip)
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => loadPrinters()}
+                        className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1 text-[11px] transition shadow-sm ml-auto"
+                      >
+                        ↻ Check Agent Connection
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
