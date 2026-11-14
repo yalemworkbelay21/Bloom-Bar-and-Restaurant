@@ -379,7 +379,7 @@ export default function DigitalMenuSettings() {
 <body>
   <div class="card">
     <div class="logo">🍽️</div>
-    <h1 class="cafe-name">BLOOM BAR & RESTAURANT</h1>
+    <h1 class="cafe-name">Bloom Bar & Restaurant& RESTAURANT</h1>
     <div class="tagline">Bar &amp; Restaurant &bull; Authentic Flavor</div>
     <div class="table-badge">${table}</div>
     <div class="qr-box">
@@ -414,7 +414,7 @@ export default function DigitalMenuSettings() {
         return `
       <div class="card">
         <div class="logo">🍽️</div>
-        <h1 class="cafe-name">BLOOM BAR & RESTAURANT</h1>
+        <h1 class="cafe-name">Bloom Bar & Restaurant& RESTAURANT</h1>
         <div class="tagline">Bar &amp; Restaurant &bull; Authentic Flavor</div>
         <div class="table-badge">${table}</div>
         <div class="qr-box">
@@ -537,8 +537,8 @@ export default function DigitalMenuSettings() {
           type="button"
           onClick={() => setActiveTab('items')}
           className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${activeTab === 'items'
-              ? 'bg-amber-900 text-white shadow-sm'
-              : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
+            ? 'bg-amber-900 text-white shadow-sm'
+            : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
             }`}
         >
           <Utensils size={14} />
@@ -552,8 +552,8 @@ export default function DigitalMenuSettings() {
           type="button"
           onClick={() => setActiveTab('qrcodes')}
           className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${activeTab === 'qrcodes'
-              ? 'bg-amber-900 text-white shadow-sm'
-              : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
+            ? 'bg-amber-900 text-white shadow-sm'
+            : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
             }`}
         >
           <QrCode size={14} />
@@ -567,8 +567,8 @@ export default function DigitalMenuSettings() {
           type="button"
           onClick={() => setActiveTab('general')}
           className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${activeTab === 'general'
-              ? 'bg-amber-900 text-white shadow-sm'
-              : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
+            ? 'bg-amber-900 text-white shadow-sm'
+            : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
             }`}
         >
           <Sliders size={14} />
@@ -579,8 +579,8 @@ export default function DigitalMenuSettings() {
           type="button"
           onClick={() => setActiveTab('about')}
           className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${activeTab === 'about'
-              ? 'bg-amber-900 text-white shadow-sm'
-              : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
+            ? 'bg-amber-900 text-white shadow-sm'
+            : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
             }`}
         >
           <ImageIcon size={14} />
@@ -594,8 +594,8 @@ export default function DigitalMenuSettings() {
             fetchReviews();
           }}
           className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${activeTab === 'reviews'
-              ? 'bg-amber-900 text-white shadow-sm'
-              : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
+            ? 'bg-amber-900 text-white shadow-sm'
+            : 'text-ink-600 hover:bg-ink-100 bg-white border border-ink-200'
             }`}
         >
           <Star size={14} className="text-amber-400 fill-amber-400" />
@@ -652,8 +652,8 @@ export default function DigitalMenuSettings() {
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition ${selectedCategory.toLowerCase() === cat.toLowerCase()
-                    ? 'bg-amber-900 text-white'
-                    : 'bg-white border border-ink-200 text-ink-600 hover:bg-ink-50'
+                  ? 'bg-amber-900 text-white'
+                  : 'bg-white border border-ink-200 text-ink-600 hover:bg-ink-50'
                   }`}
               >
                 {cat}
@@ -754,8 +754,8 @@ export default function DigitalMenuSettings() {
                             disabled={updatingId === p._id}
                             onClick={() => handleToggleProduct(p, 'isAvailableOnMenu')}
                             className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 mx-auto ${isVisible
-                                ? 'bg-emerald-600 text-white shadow-xs'
-                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
                               }`}
                           >
                             {isVisible ? <Eye size={12} /> : <EyeOff size={12} />}
@@ -770,8 +770,8 @@ export default function DigitalMenuSettings() {
                             disabled={updatingId === p._id}
                             onClick={() => handleToggleProduct(p, 'manualOutOfStock')}
                             className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 mx-auto ${isManualOut
-                                ? 'bg-red-600 text-white shadow-xs'
-                                : 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                              ? 'bg-red-600 text-white shadow-xs'
+                              : 'bg-emerald-50 text-emerald-800 border border-emerald-300'
                               }`}
                           >
                             {isManualOut ? <AlertTriangle size={12} /> : <Check size={12} />}
@@ -786,8 +786,8 @@ export default function DigitalMenuSettings() {
                             disabled={updatingId === p._id}
                             onClick={() => handleToggleProduct(p, 'isFeatured')}
                             className={`p-1.5 rounded-xl text-xs transition mx-auto ${isFeatured
-                                ? 'bg-amber-100 text-amber-800 border border-amber-300 font-bold'
-                                : 'text-ink-400 hover:bg-ink-100'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300 font-bold'
+                              : 'text-ink-400 hover:bg-ink-100'
                               }`}
                             title={isFeatured ? 'Featured in top banner' : 'Click to feature in top banner'}
                           >

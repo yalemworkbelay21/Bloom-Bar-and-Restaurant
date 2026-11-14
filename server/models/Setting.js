@@ -97,7 +97,7 @@ const settingSchema = new mongoose.Schema(
     telegramDailyReportTime: { type: String, default: '12:00' },
     lastDailyReportExecution: { type: String, default: '' },
     lastDailyReportDate: { type: String, default: '' },
-    notes: { type: String, default: 'Bloom Bar and Restaurant   CaféHotel Management & Stock Control System' },
+    notes: { type: String, default: 'Bloom Bar and RestaurantHotel Management & Stock Control System' },
 
     // ── Pricing & Cost Parameters ─────────────────────────────────
     // Contingency: % buffer added on top of raw material cost (waste, price fluctuation)
@@ -175,11 +175,11 @@ const settingSchema = new mongoose.Schema(
     menuReviews: [
       {
         customerName: { type: String, default: 'Valued Guest' },
-        tableNo:      { type: String, default: '' },
-        rating:       { type: Number, default: 5 },
-        comment:      { type: String, default: '' },
-        tags:         [String],
-        createdAt:    { type: Date, default: Date.now },
+        tableNo: { type: String, default: '' },
+        rating: { type: Number, default: 5 },
+        comment: { type: String, default: '' },
+        tags: [String],
+        createdAt: { type: Date, default: Date.now },
       },
     ],
   },

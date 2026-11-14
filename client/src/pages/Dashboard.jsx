@@ -39,6 +39,7 @@ import {
 import api from '../api/axios';
 import Card from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import MobileDashboardView from '../components/dashboard/MobileDashboardView';
 
 const formatETB = (n) =>
@@ -151,6 +152,7 @@ let cachedDashboardData = getStoredDashboardData();
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [data, setData] = useState(cachedDashboardData);
   const [loading, setLoading] = useState(!cachedDashboardData);
   const [movementView, setMovementView] = useState('bar'); // 'bar' | 'area' (Bar Chart as default)
@@ -294,14 +296,14 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-2xl font-bold tracking-tight text-ink-900">
-                Dashboard
+                {t('dashboard.title', 'Dashboard')}
               </h1>
               <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200">
-                Live
+                {t('dashboard.live', 'Live')}
               </span>
             </div>
             <p className="text-sm text-ink-400 mt-0.5">
-              Overview of your inventory and stock movements
+              {t('dashboard.subtitle', 'Overview of your inventory and stock movements')}
             </p>
           </div>
 
@@ -311,31 +313,31 @@ export default function Dashboard() {
               onClick={() => navigate('/transactions/cash-grv')}
               className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
             >
-              <ShoppingBag size={14} /> New Cash GRV
+              <ShoppingBag size={14} /> {t('dashboard.newCashGrv', 'New Cash GRV')}
             </button>
             <button
               onClick={() => navigate('/transactions/credit-grv')}
               className="inline-flex items-center gap-1.5 rounded-xl bg-ink-800 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-ink-900 transition"
             >
-              <CreditCard size={14} /> New Credit GRV
+              <CreditCard size={14} /> {t('dashboard.newCreditGrv', 'New Credit GRV')}
             </button>
             <button
               onClick={() => navigate('/reports/inventory-count')}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
             >
-              <ClipboardList size={14} /> Inventory Count
+              <ClipboardList size={14} /> {t('dashboard.inventoryCount', 'Inventory Count')}
             </button>
             <button
               onClick={() => navigate('/reports/stock-balance')}
               className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 shadow-sm hover:bg-blue-100 transition"
             >
-              <Scale size={14} /> Stock Balance
+              <Scale size={14} /> {t('dashboard.stockBalance', 'Stock Balance')}
             </button>
             <button
               onClick={() => fetchSummary(true)}
               disabled={refreshing}
               className="inline-flex items-center gap-1 rounded-xl border border-ink-200 bg-white p-2 text-xs font-medium text-ink-600 hover:bg-ink-50 transition"
-              title="Refresh statistics"
+              title={language === 'am' ? 'መረጃ አድስ' : 'Refresh statistics'}
             >
               <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
             </button>
@@ -347,7 +349,7 @@ export default function Dashboard() {
           {/* Total Stock Value */}
           <div className="relative overflow-hidden rounded-2xl border border-ink-100 bg-gradient-to-br from-ink-900 to-ink-950 p-5 text-white shadow-soft">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-ink-300 uppercase tracking-wider">Total Stock Value</p>
+              <p className="text-xs font-medium text-ink-300 uppercase tracking-wider">{t('dashboard.totalStockValue', 'Total Stock Value')}</p>
               <span className="rounded-xl bg-white/10 p-2 text-blue-300">
                 <Wallet size={18} />
               </span>
@@ -356,7 +358,7 @@ export default function Dashboard() {
               {formatETB(data.stockValue)}
             </p>
             <div className="mt-3 flex items-center justify-between text-xs text-ink-300 border-t border-white/10 pt-2.5">
-              <span>This month spend</span>
+              <span>{t('dashboard.thisMonthSpend', 'This month spend')}</span>
               <span className="font-semibold text-emerald-400">{formatCompactETB(data.monthSpend)}</span>
             </div>
           </div>
@@ -364,7 +366,7 @@ export default function Dashboard() {
           {/* Low / Critical Stock */}
           <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white p-5 shadow-soft">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-amber-900 uppercase tracking-wider">Reorder Alerts</p>
+              <p className="text-xs font-semibold text-amber-900 uppercase tracking-wider">{t('dashboard.reorderAlerts', 'Reorder Alerts')}</p>
               <span className="rounded-xl bg-amber-100 p-2 text-amber-700">
                 <AlertTriangle size={18} />
               </span>
@@ -373,12 +375,12 @@ export default function Dashboard() {
               <p className="text-3xl font-black text-amber-950 tabular-nums">
                 {lowOrOutCount}
               </p>
-              <span className="text-xs font-medium text-amber-700">materials below safety level</span>
+              <span className="text-xs font-medium text-amber-700">{t('dashboard.belowSafetyLevel', 'materials below safety level')}</span>
             </div>
             <div className="mt-3 flex items-center justify-between text-xs border-t border-amber-100 pt-2.5">
-              <span className="text-rose-600 font-semibold">{data.outOfStockCount || 0} out of stock</span>
+              <span className="text-rose-600 font-semibold">{data.outOfStockCount || 0} {t('dashboard.outOfStock', 'out of stock')}</span>
               <Link to="/reports/stock-levels" className="font-semibold text-amber-800 hover:underline inline-flex items-center gap-0.5">
-                Review <ChevronRight size={12} />
+                {t('dashboard.review', 'Review')} <ChevronRight size={12} />
               </Link>
             </div>
           </div>
@@ -386,7 +388,7 @@ export default function Dashboard() {
           {/* Materials Tracked */}
           <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-ink-400 uppercase tracking-wider">Tracked Materials</p>
+              <p className="text-xs font-semibold text-ink-400 uppercase tracking-wider">{t('dashboard.trackedMaterials', 'Tracked Materials')}</p>
               <span className="rounded-xl bg-blue-50 p-2 text-blue-600">
                 <Boxes size={18} />
               </span>
@@ -395,12 +397,12 @@ export default function Dashboard() {
               <p className="text-3xl font-black text-ink-900 tabular-nums">
                 {data.totalMaterials}
               </p>
-              <span className="text-xs text-ink-400">active items</span>
+              <span className="text-xs text-ink-400">{t('dashboard.activeItems', 'active items')}</span>
             </div>
             <div className="mt-3 flex items-center justify-between text-xs text-ink-500 border-t border-ink-50 pt-2.5">
-              <span>In {categoryData.length} categories</span>
+              <span>{language === 'am' ? `በ ${categoryData.length} ምድቦች` : `In ${categoryData.length} categories`}</span>
               <Link to="/materials" className="font-medium text-blue-600 hover:underline inline-flex items-center gap-0.5">
-                Browse <ChevronRight size={12} />
+                {t('dashboard.browse', 'Browse')} <ChevronRight size={12} />
               </Link>
             </div>
           </div>
@@ -408,7 +410,7 @@ export default function Dashboard() {
           {/* Today's Stock Flow */}
           <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-ink-400 uppercase tracking-wider">Today's Movement</p>
+              <p className="text-xs font-semibold text-ink-400 uppercase tracking-wider">{t('dashboard.todayMovement', "Today's Movement")}</p>
               <span className="rounded-xl bg-emerald-50 p-2 text-emerald-600">
                 <Truck size={18} />
               </span>
@@ -416,7 +418,7 @@ export default function Dashboard() {
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-emerald-50/70 p-2">
                 <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                  <ArrowDownCircle size={12} /> Inflow
+                  <ArrowDownCircle size={12} /> {t('dashboard.inflow', 'Inflow')}
                 </div>
                 <p className="mt-1 text-lg font-bold text-emerald-900 tabular-nums">
                   +{data.todaysStockIn || 0}
@@ -424,7 +426,7 @@ export default function Dashboard() {
               </div>
               <div className="rounded-xl bg-ink-50 p-2">
                 <div className="flex items-center gap-1 text-[11px] font-semibold text-ink-600">
-                  <ArrowUpCircle size={12} /> Outflow
+                  <ArrowUpCircle size={12} /> {t('dashboard.outflow', 'Outflow')}
                 </div>
                 <p className="mt-1 text-lg font-bold text-ink-900 tabular-nums">
                   -{data.todaysStockOut || 0}
@@ -433,7 +435,7 @@ export default function Dashboard() {
             </div>
             <div className="mt-2 text-right">
               <Link to="/transactions" className="text-xs font-medium text-ink-500 hover:text-ink-800">
-                View all transactions →
+                {t('dashboard.viewAll', 'View all transactions')} →
               </Link>
             </div>
           </div>
@@ -452,9 +454,9 @@ export default function Dashboard() {
                     </span>
                     <div>
                       <h3 className="font-display text-base font-bold text-ink-900 leading-tight">
-                        Stock Flow Trend
+                        {t('dashboard.stockFlowTrend', 'Stock Flow Trend')}
                       </h3>
-                      <p className="text-[11px] text-ink-400 font-medium">Last 7 Days</p>
+                      <p className="text-[11px] text-ink-400 font-medium">{t('dashboard.last7Days', 'Last 7 Days')}</p>
                     </div>
                   </div>
                 </div>
@@ -465,11 +467,11 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 border border-blue-100">
                       <ArrowDownCircle size={11} />
-                      {trendData.reduce((s, d) => s + (d.stockIn || 0), 0).toLocaleString()} in
+                      {trendData.reduce((s, d) => s + (d.stockIn || 0), 0).toLocaleString()} {t('dashboard.inflow', 'in')}
                     </div>
                     <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-700 border border-amber-100">
                       <ArrowUpCircle size={11} />
-                      {trendData.reduce((s, d) => s + (d.stockOut || 0), 0).toLocaleString()} out
+                      {trendData.reduce((s, d) => s + (d.stockOut || 0), 0).toLocaleString()} {t('dashboard.outflow', 'out')}
                     </div>
                   </div>
 
@@ -482,7 +484,7 @@ export default function Dashboard() {
                         : 'hover:text-ink-900'
                         }`}
                     >
-                      Area Curve
+                      {t('dashboard.areaCurve', 'Area Curve')}
                     </button>
                     <button
                       onClick={() => setMovementView('bar')}
@@ -491,7 +493,7 @@ export default function Dashboard() {
                         : 'hover:text-ink-900'
                         }`}
                     >
-                      Bar Chart
+                      {t('dashboard.barChart', 'Bar Chart')}
                     </button>
                   </div>
                 </div>
@@ -617,9 +619,9 @@ export default function Dashboard() {
                 </span>
                 <div>
                   <h3 className="font-display text-base font-bold text-ink-900 leading-tight">
-                    Valuation by Category
+                    {t('dashboard.valuationByCategory', 'Valuation by Category')}
                   </h3>
-                  <p className="text-[11px] text-ink-400 font-medium">Stock asset distribution</p>
+                  <p className="text-[11px] text-ink-400 font-medium">{t('dashboard.stockAssetDist', 'Stock asset distribution')}</p>
                 </div>
               </div>
 

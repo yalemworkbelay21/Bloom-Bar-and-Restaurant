@@ -771,7 +771,7 @@ export default function Login() {
           <div className="login-hero__content">
             <h1 className="login-hero__heading">
               Hello<br />
-              Bloom Bar &amp; Restaurant!&nbsp;
+              Bloom Bar & Restaurant&amp; Restaurant!&nbsp;
               <span className="login-hero__wave" role="img" aria-label="waving hand">👋</span>
             </h1>
             <p className="login-hero__desc">
@@ -782,7 +782,7 @@ export default function Login() {
 
           {/* left footer */}
           <footer className="login-hero__footer">
-            © 2026 Bloom Bar &amp; Restaurant. All rights reserved.
+            © 2026 Bloom Bar & Restaurant&amp; Restaurant. All rights reserved.
           </footer>
         </section>
 

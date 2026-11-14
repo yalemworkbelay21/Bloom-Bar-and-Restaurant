@@ -340,7 +340,7 @@ const permanentDeleteProduct = asyncHandler(async (req, res) => {
 
 
 // GET /api/products/export/excel
-// Exports in the Bloom Bar and Restaurant   Caféformat:
+// Exports in the Bloom Bar and Restaurantformat:
 // Code | Name | UOM | Child Category | Parent Category | Default Value | Default Tax | Created On | State
 const exportProductsExcel = asyncHandler(async (req, res) => {
   const products = await Product.find({ isActive: true })
@@ -371,7 +371,7 @@ const exportProductsExcel = asyncHandler(async (req, res) => {
 });
 
 // POST /api/products/import/excel
-// Accepts the Bloom Bar and Restaurant   Caféformat:
+// Accepts the Bloom Bar and Restaurantformat:
 // Code | Name | UOM | Child Category | Parent Category | Default Value | Default Tax | Created On | State
 const importProductsExcel = asyncHandler(async (req, res) => {
   if (!req.file) { res.status(400); throw new Error('No file uploaded'); }

@@ -65,7 +65,7 @@ function dispatchToRelay(action, payload, timeoutMs = 8000) {
       const waitingRes = relayAgentWaiters.shift();
       try {
         waitingRes.json({ jobs: [job] });
-      } catch (_) {}
+      } catch (_) { }
     } else {
       relayJobQueue.push(job);
     }

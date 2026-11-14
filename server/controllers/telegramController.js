@@ -196,7 +196,7 @@ const addSubscriber = asyncHandler(async (req, res) => {
 const getSubscribers = asyncHandler(async (req, res) => {
   const settings = await Setting.findOne();
   const subs = settings?.telegramSubscribers || [];
-  
+
   // Cross-reference with User collection to flag dev accounts
   try {
     const User = require('../models/User');
@@ -329,7 +329,7 @@ const removeSubscriber = asyncHandler(async (req, res) => {
   // Send polite unsubscription notice to that Telegram chat
   await reply(
     targetChatId,
-    `🏨 <b>Bloom Bar and Restaurant</b>\n━━━━━━━━━━━━━━━━━━━━\n🔕 <b>UNSUBSCRIBED BY ADMINISTRATOR</b>\n\nYour Telegram notifications subscription has been removed by the administrator. You will no longer receive alerts.\n━━━━━━━━━━━━━━━━━━━━`
+    `🏨 <b>Bloom Bar & Restaurant</b>\n━━━━━━━━━━━━━━━━━━━━\n🔕 <b>UNSUBSCRIBED BY ADMINISTRATOR</b>\n\nYour Telegram notifications subscription has been removed by the administrator. You will no longer receive alerts.\n━━━━━━━━━━━━━━━━━━━━`
   );
 
   res.json({ message: 'Subscriber removed and notifications stopped.' });

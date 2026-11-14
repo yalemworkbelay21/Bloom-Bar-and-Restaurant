@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import MobileBottomNav from './MobileBottomNav';
 import AiChat from '../AiChat';
+import { useLanguage } from '../../context/LanguageContext';
 
 const titles = {
   '/': 'Dashboard',
@@ -40,15 +41,60 @@ const titles = {
   '/profile': 'User Profile',
   '/recycle-bin': 'Recycle Bin',
   '/stock-requests': 'Stock Issue & Request',
+  '/pos': 'Point of Sale (POS)',
+  '/captain-order': 'Captain Order',
+  '/cash-sales': 'Cash Sales',
+};
+
+const routeTitleKeys = {
+  '/': 'nav.dashboard',
+  '/materials': 'nav.rawMaterials',
+  '/products': 'nav.productsRecipes',
+  '/analytics': 'nav.analyticsPl',
+  '/transactions': 'nav.stockMovements',
+  '/transactions/cash-grv': 'nav.cashGrv',
+  '/transactions/credit-grv': 'nav.creditGrv',
+  '/transactions/fresh-bazaar': 'nav.freshBazaar',
+  '/transactions/pos-adjustment': 'nav.posAdjustment',
+  '/transactions/disposal': 'nav.disposal',
+  '/transactions/neg-adjustment': 'nav.negAdjustment',
+  '/sales-import': 'nav.importSales',
+  '/purchases': 'nav.purchaseHistory',
+  '/suppliers': 'nav.suppliers',
+  '/reports': 'nav.reports',
+  '/reports/summary': 'nav.overviewSummary',
+  '/reports/stock-balance': 'nav.stockBalanceSheet',
+  '/reports/inventory-count': 'nav.inventoryCount',
+  '/reports/daily': 'nav.dailyReport',
+  '/reports/cash-grv': 'nav.cashGrvReport',
+  '/reports/credit-grv': 'nav.creditGrvReport',
+  '/reports/fresh-bazaar': 'nav.freshBazaarReport',
+  '/reports/pos-adjustment': 'nav.posAdjReport',
+  '/reports/disposal': 'nav.disposalReport',
+  '/reports/neg-adjustment': 'nav.negAdjReport',
+  '/reports/stock-levels': 'nav.stockLevels',
+  '/reports/purchases': 'nav.purchaseHistory',
+  '/users': 'nav.staffAccounts',
+  '/employees': 'nav.employeesDirectory',
+  '/consumption': 'nav.consumption',
+  '/settings': 'nav.settings',
+  '/profile': 'topbar.profile',
+  '/recycle-bin': 'nav.recycleBin',
+  '/stock-requests': 'nav.stockIssueRequest',
+  '/pos': 'nav.posOrdering',
+  '/captain-order': 'nav.captainOrder',
+  '/cash-sales': 'nav.cashSales',
 };
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);  // mobile overlay
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);  // desktop collapse
   const location = useLocation();
+  const { t } = useLanguage();
   const isPos = location.pathname === '/pos';
   const isDashboard = location.pathname === '/';
-  const title = titles[location.pathname] || 'Bloom Bar and Restaurant   Café Plc Stock';
+  const key = routeTitleKeys[location.pathname];
+  const title = key ? t(key, titles[location.pathname]) : (titles[location.pathname] || 'Bloom Bar & Restaurant');
 
   return (
     <div className="flex h-screen overflow-hidden bg-ink-50">

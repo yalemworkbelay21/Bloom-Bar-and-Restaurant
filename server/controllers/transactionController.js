@@ -20,15 +20,15 @@ const verifyUserPassword = async (userId, password) => {
 // ── Auto voucher number ───────────────────────────────────────────────
 const generateVoucherNo = async (voucherType) => {
   const prefixes = {
-    cash_grv:       'CGRV',
-    credit_grv:     'CRGRV',
-    disposal:       'DISP',
+    cash_grv: 'CGRV',
+    credit_grv: 'CRGRV',
+    disposal: 'DISP',
     neg_adjustment: 'NADJ',
     pos_adjustment: 'PADJ',
-    fresh_bazaar:   'FBR',
-    sales_import:   'SALE',
-    pos_sale:       'POS',
-    manual_sale:    'MSALE',
+    fresh_bazaar: 'FBR',
+    sales_import: 'SALE',
+    pos_sale: 'POS',
+    manual_sale: 'MSALE',
   };
   const prefix = prefixes[voucherType] ?? 'TXN';
   const count = await StockTransaction.countDocuments({ voucherType });
@@ -40,11 +40,11 @@ const getTransactions = asyncHandler(async (req, res) => {
   const { voucherType, material, from, to } = req.query;
   const filter = {};
   if (voucherType) filter.voucherType = voucherType;
-  if (material)    filter.$or = [{ material }, { 'items.material': material }];
+  if (material) filter.$or = [{ material }, { 'items.material': material }];
   if (from || to) {
     filter.date = {};
     if (from) filter.date.$gte = new Date(from);
-    if (to)   filter.date.$lte = new Date(new Date(to).setHours(23, 59, 59, 999));
+    if (to) filter.date.$lte = new Date(new Date(to).setHours(23, 59, 59, 999));
   }
 
   const transactions = await StockTransaction.find(filter)
@@ -109,7 +109,7 @@ const createTransaction = asyncHandler(async (req, res) => {
         `Insufficient stock for "${mat.name}". Available: ${mat.currentStock} ${mat.unit}, requested: ${qty}.`
       );
     }
-    const unitCost  = Number(item.unitCost) >= 0 ? Number(item.unitCost) : (mat.unitCost || 0);
+    const unitCost = Number(item.unitCost) >= 0 ? Number(item.unitCost) : (mat.unitCost || 0);
     const totalCost = Math.round(unitCost * qty * 100) / 100;
     resolvedItems.push({ material: mat._id, quantity: qty, unitCost, totalCost, _doc: mat });
   }
@@ -118,28 +118,28 @@ const createTransaction = asyncHandler(async (req, res) => {
 
   const formattedAttachments = Array.isArray(attachments) && attachments.length > 0
     ? attachments.map(a => ({
-        url: a.url || a,
-        name: a.name || 'Receipt',
-        mimeType: a.mimeType || 'image/jpeg',
-        size: a.size || 0,
-        uploadedAt: a.uploadedAt || new Date(),
-      }))
+      url: a.url || a,
+      name: a.name || 'Receipt',
+      mimeType: a.mimeType || 'image/jpeg',
+      size: a.size || 0,
+      uploadedAt: a.uploadedAt || new Date(),
+    }))
     : (attachment ? [{ url: attachment, name: 'Receipt', mimeType: 'image/jpeg', size: 0, uploadedAt: new Date() }] : []);
 
   const firstItem = resolvedItems[0];
   const txnData = {
     voucherType,
     voucherNo: voucherNo || (await generateVoucherNo(voucherType)),
-    supplier:  supplier || undefined,
-    type:      direction,
-    material:  firstItem.material,
-    quantity:  firstItem.quantity,
-    unitCost:  firstItem.unitCost,
-    items:     resolvedItems.map(({ material, quantity, unitCost, totalCost }) => ({ material, quantity, unitCost, totalCost })),
-    reason:    reason || '',
+    supplier: supplier || undefined,
+    type: direction,
+    material: firstItem.material,
+    quantity: firstItem.quantity,
+    unitCost: firstItem.unitCost,
+    items: resolvedItems.map(({ material, quantity, unitCost, totalCost }) => ({ material, quantity, unitCost, totalCost })),
+    reason: reason || '',
     reference: reference || '',
-    notes:     notes || '',
-    date:      date ? new Date(date) : new Date(),
+    notes: notes || '',
+    date: date ? new Date(date) : new Date(),
     attachment: attachment || (formattedAttachments[0]?.url || ''),
     attachments: formattedAttachments,
     performedBy: req.user._id,
@@ -162,7 +162,7 @@ const createTransaction = asyncHandler(async (req, res) => {
 
   invalidateDashboardCache();
   tg.notifyTransaction(populated, req.user);
-  notify.push({ type: 'transaction', title: 'New Stock Transaction', message: `${req.user.name} recorded a ${populated.voucherType?.replace('_',' ')} — ${populated.items?.length || 1} item(s)`, icon: populated.type === 'in' ? '📥' : '📤', link: '/transactions', severity: 'info', userId: req.user._id });
+  notify.push({ type: 'transaction', title: 'New Stock Transaction', message: `${req.user.name} recorded a ${populated.voucherType?.replace('_', ' ')} — ${populated.items?.length || 1} item(s)`, icon: populated.type === 'in' ? '📥' : '📤', link: '/transactions', severity: 'info', userId: req.user._id });
   res.status(201).json(populated);
 });
 // ── PUT /api/transactions/:id ─────────────────────────────────────────
@@ -220,7 +220,7 @@ const updateTransaction = asyncHandler(async (req, res) => {
       res.status(404);
       throw new Error(`Material not found: ${matId}`);
     }
-    const unitCost  = Number(item.unitCost) || mat.unitCost || 0;
+    const unitCost = Number(item.unitCost) || mat.unitCost || 0;
     const totalCost = unitCost * Number(item.quantity);
     resolvedItems.push({ material: mat._id, quantity: Number(item.quantity), unitCost, totalCost, _doc: mat });
   }
@@ -229,30 +229,30 @@ const updateTransaction = asyncHandler(async (req, res) => {
   const totalAmount = resolvedItems.reduce((s, i) => s + i.totalCost, 0);
   const formattedAttachments = Array.isArray(attachments) && attachments.length > 0
     ? attachments.map(a => ({
-        url: a.url || a,
-        name: a.name || 'Receipt',
-        mimeType: a.mimeType || 'image/jpeg',
-        size: a.size || 0,
-        uploadedAt: a.uploadedAt || new Date(),
-      }))
+      url: a.url || a,
+      name: a.name || 'Receipt',
+      mimeType: a.mimeType || 'image/jpeg',
+      size: a.size || 0,
+      uploadedAt: a.uploadedAt || new Date(),
+    }))
     : (attachment ? [{ url: attachment, name: 'Receipt', mimeType: 'image/jpeg', size: 0, uploadedAt: new Date() }] : []);
 
   const firstItem = resolvedItems[0];
 
   transaction.voucherType = voucherType;
   if (voucherNo) transaction.voucherNo = voucherNo;
-  transaction.supplier    = supplier || undefined;
-  transaction.type        = newDirection;
-  transaction.material    = firstItem.material;
-  transaction.quantity    = firstItem.quantity;
-  transaction.unitCost    = firstItem.unitCost;
-  transaction.items       = resolvedItems.map(({ material, quantity, unitCost, totalCost }) => ({ material, quantity, unitCost, totalCost }));
-  transaction.reason      = reason || '';
-  transaction.reference   = reference || '';
-  transaction.notes       = notes || '';
+  transaction.supplier = supplier || undefined;
+  transaction.type = newDirection;
+  transaction.material = firstItem.material;
+  transaction.quantity = firstItem.quantity;
+  transaction.unitCost = firstItem.unitCost;
+  transaction.items = resolvedItems.map(({ material, quantity, unitCost, totalCost }) => ({ material, quantity, unitCost, totalCost }));
+  transaction.reason = reason || '';
+  transaction.reference = reference || '';
+  transaction.notes = notes || '';
   if (date) transaction.date = new Date(date);
   transaction.attachments = formattedAttachments;
-  transaction.attachment  = formattedAttachments.length > 0 ? formattedAttachments[0].url : '';
+  transaction.attachment = formattedAttachments.length > 0 ? formattedAttachments[0].url : '';
   transaction.totalAmount = totalAmount;
 
   if (!transaction.trail) transaction.trail = [];
@@ -303,8 +303,8 @@ const deleteTransaction = asyncHandler(async (req, res) => {
   }
 
   // Soft delete — move to recycle bin
-  transaction.deletedAt   = new Date();
-  transaction.deletedBy   = req.user?.name || 'System';
+  transaction.deletedAt = new Date();
+  transaction.deletedBy = req.user?.name || 'System';
   transaction.deletedFrom = 'transactions';
   await transaction.save();
 
@@ -335,8 +335,8 @@ const bulkDeleteTransactions = asyncHandler(async (req, res) => {
         }
       }
     }
-    transaction.deletedAt   = new Date();
-    transaction.deletedBy   = req.user?.name || 'System';
+    transaction.deletedAt = new Date();
+    transaction.deletedBy = req.user?.name || 'System';
     transaction.deletedFrom = 'transactions';
     await transaction.save();
   }
@@ -365,8 +365,8 @@ const restoreTransaction = asyncHandler(async (req, res) => {
     }
   }
 
-  transaction.deletedAt   = null;
-  transaction.deletedBy   = null;
+  transaction.deletedAt = null;
+  transaction.deletedBy = null;
   transaction.deletedFrom = null;
   await transaction.save();
 
@@ -391,7 +391,7 @@ const getVoucherSummary = asyncHandler(async (req, res) => {
   if (from || to) {
     match.date = {};
     if (from) match.date.$gte = new Date(from);
-    if (to)   match.date.$lte = new Date(new Date(to).setHours(23, 59, 59, 999));
+    if (to) match.date.$lte = new Date(new Date(to).setHours(23, 59, 59, 999));
   }
 
   const summary = await StockTransaction.aggregate([
@@ -399,9 +399,9 @@ const getVoucherSummary = asyncHandler(async (req, res) => {
     {
       $group: {
         _id: '$voucherType',
-        count:       { $sum: 1 },
+        count: { $sum: 1 },
         totalAmount: { $sum: '$totalAmount' },
-        totalQty:    { $sum: '$quantity' },
+        totalQty: { $sum: '$quantity' },
       },
     },
     { $sort: { _id: 1 } },
@@ -432,10 +432,10 @@ const advanceTransaction = asyncHandler(async (req, res) => {
   if (!cap) { res.status(400); throw new Error(`Unknown action: ${action}`); }
 
   const transitions = {
-    check:   { from: ['pending'],            to: 'checked' },
-    approve: { from: ['checked'],            to: 'approved' },
-    post:    { from: ['approved'],           to: 'posted' },
-    void:    { from: ['pending','checked','approved','posted'], to: 'voided' },
+    check: { from: ['pending'], to: 'checked' },
+    approve: { from: ['checked'], to: 'approved' },
+    post: { from: ['approved'], to: 'posted' },
+    void: { from: ['pending', 'checked', 'approved', 'posted'], to: 'voided' },
   };
 
   const rule = transitions[action];
@@ -455,9 +455,9 @@ const advanceTransaction = asyncHandler(async (req, res) => {
   txn.trail = txn.trail || [];
   txn.trail.push({ action: rule.to, by: actor._id, byName: actor.name, byRole: actor.role, note });
 
-  if (action === 'check')   { txn.checkedBy  = actor._id; txn.checkedAt  = new Date(); }
+  if (action === 'check') { txn.checkedBy = actor._id; txn.checkedAt = new Date(); }
   if (action === 'approve') { txn.approvedBy = actor._id; txn.approvedAt = new Date(); }
-  if (action === 'post')    { txn.postedBy   = actor._id; txn.postedAt   = new Date(); }
+  if (action === 'post') { txn.postedBy = actor._id; txn.postedAt = new Date(); }
 
   // ── STOCK IMPACT RULES ────────────────────────────────────────────
   // CHECKED  → apply stock (first time it affects the balance sheet)
@@ -480,9 +480,9 @@ const advanceTransaction = asyncHandler(async (req, res) => {
           // newUnitCost = (oldStock × oldCost + inQty × inCost) / (oldStock + inQty)
           // Only update when oldStock > 0; if stock was 0, just use the new price.
           const oldStock = mat.currentStock >= 0 ? mat.currentStock : 0;
-          const oldCost  = mat.unitCost  || 0;
-          const inQty    = item.quantity || 0;
-          const inCost   = item.unitCost || oldCost;
+          const oldCost = mat.unitCost || 0;
+          const inQty = item.quantity || 0;
+          const inCost = item.unitCost || oldCost;
           const totalQty = oldStock + inQty;
           if (totalQty > 0) {
             mat.unitCost = ((oldStock * oldCost) + (inQty * inCost)) / totalQty;
@@ -522,7 +522,7 @@ const advanceTransaction = asyncHandler(async (req, res) => {
     .populate('performedBy checkedBy approvedBy postedBy', 'name role');
 
   tg.notifyTransactionAdvanced(populated, action, actor);
-  if (['void','approve'].includes(action)) {
+  if (['void', 'approve'].includes(action)) {
     notify.push({ type: 'transaction', title: `Voucher ${action}d`, message: `${actor.name} ${action}d ${populated.voucherNo || 'voucher'}`, icon: action === 'void' ? '🔴' : '🟣', link: '/transactions', severity: action === 'void' ? 'error' : 'success', userId: actor._id });
   }
   res.json({ message: `Voucher moved from "${prev}" → "${rule.to}"`, transaction: populated });
@@ -538,7 +538,7 @@ const importSales = asyncHandler(async (req, res) => {
     throw new Error('No sales data provided');
   }
 
-  const Product     = require('../models/Product');
+  const Product = require('../models/Product');
   const SalesRecord = require('../models/SalesRecord');
 
   // ── Smart Duplicate Check ──
@@ -609,7 +609,7 @@ const importSales = asyncHandler(async (req, res) => {
   const materialDeductions = {};
   const saleLines = [];
   const allSoldProducts = [];
-  const notFound  = [];
+  const notFound = [];
 
   // ── 2. Fast in-memory processing loop with safe string coercion ──
   for (const sale of sales) {
@@ -645,18 +645,18 @@ const importSales = asyncHandler(async (req, res) => {
           }
           if (!mat) continue;
 
-          const matId     = String(mat._id);
+          const matId = String(mat._id);
           const deductQty = ing.quantity * qty;
-          const ingCost   = (mat.unitCost || 0) * deductQty;
+          const ingCost = (mat.unitCost || 0) * deductQty;
           cogs += ingCost;
           materialDeductions[matId] = (materialDeductions[matId] || 0) + deductQty;
           lineIngredients.push({
-            materialId:   mat._id,
+            materialId: mat._id,
             materialName: mat.name,
-            unit:         mat.unit,
+            unit: mat.unit,
             quantityUsed: deductQty,
-            unitCost:     mat.unitCost || 0,
-            totalCost:    ingCost,
+            unitCost: mat.unitCost || 0,
+            totalCost: ingCost,
           });
         }
       }
@@ -669,18 +669,18 @@ const importSales = asyncHandler(async (req, res) => {
       const lineSellingPrice = qty > 0 ? (lineRev / qty) : (product.sellingPrice || 0);
 
       const recordLine = {
-        productName:     product.name || nameStr,
-        productCode:     product.code || codeStr,
-        productId:       product._id,
-        category:        product.category || 'General',
-        parentCategory:  product.parentCategory || 'FOOD',
-        uom:             product.uom || 'Pcs',
-        quantitySold:    qty,
-        sellingPrice:    lineSellingPrice,
-        revenue:         lineRev,
+        productName: product.name || nameStr,
+        productCode: product.code || codeStr,
+        productId: product._id,
+        category: product.category || 'General',
+        parentCategory: product.parentCategory || 'FOOD',
+        uom: product.uom || 'Pcs',
+        quantitySold: qty,
+        sellingPrice: lineSellingPrice,
+        revenue: lineRev,
         cogs,
-        grossProfit:     lineRev - cogs,
-        matchStatus:     (hasRecipe && lineIngredients.length > 0) ? 'recipe_deducted' : 'no_recipe',
+        grossProfit: lineRev - cogs,
+        matchStatus: (hasRecipe && lineIngredients.length > 0) ? 'recipe_deducted' : 'no_recipe',
         ingredientsUsed: lineIngredients,
       };
 
@@ -694,16 +694,16 @@ const importSales = asyncHandler(async (req, res) => {
       || (nameStr ? rawMaterialByName.get(nameClean) : null);
 
     if (material) {
-      const matId   = String(material._id);
+      const matId = String(material._id);
       const ingCost = (material.unitCost || 0) * qty;
       materialDeductions[matId] = (materialDeductions[matId] || 0) + qty;
       lineIngredients.push({
-        materialId:   material._id,
+        materialId: material._id,
         materialName: material.name,
-        unit:         material.unit,
+        unit: material.unit,
         quantityUsed: qty,
-        unitCost:     material.unitCost || 0,
-        totalCost:    ingCost,
+        unitCost: material.unitCost || 0,
+        totalCost: ingCost,
       });
 
       let lineRev = rev;
@@ -714,18 +714,18 @@ const importSales = asyncHandler(async (req, res) => {
       const lineSellingPrice = qty > 0 ? (lineRev / qty) : 0;
 
       const recordLine = {
-        productName:     material.name || nameStr,
-        productCode:     material.code || codeStr,
-        productId:       null,
-        category:        material.category || 'General',
-        parentCategory:  'RAW',
-        uom:             material.unit || 'Pcs',
-        quantitySold:    qty,
-        sellingPrice:    lineSellingPrice,
-        revenue:         lineRev,
-        cogs:            ingCost,
-        grossProfit:     lineRev - ingCost,
-        matchStatus:     'direct_material',
+        productName: material.name || nameStr,
+        productCode: material.code || codeStr,
+        productId: null,
+        category: material.category || 'General',
+        parentCategory: 'RAW',
+        uom: material.unit || 'Pcs',
+        quantitySold: qty,
+        sellingPrice: lineSellingPrice,
+        revenue: lineRev,
+        cogs: ingCost,
+        grossProfit: lineRev - ingCost,
+        matchStatus: 'direct_material',
         ingredientsUsed: lineIngredients,
       };
 
@@ -743,18 +743,18 @@ const importSales = asyncHandler(async (req, res) => {
     const lineSellingPrice = qty > 0 ? (lineRev / qty) : price;
 
     const unmatchedLine = {
-      productName:     nameStr || codeStr,
-      productCode:     codeStr,
-      productId:       null,
-      category:        'Unmatched',
-      parentCategory:  'FOOD',
-      uom:             'Pcs',
-      quantitySold:    qty,
-      sellingPrice:    lineSellingPrice,
-      revenue:         lineRev,
-      cogs:            0,
-      grossProfit:     lineRev,
-      matchStatus:     'unmatched',
+      productName: nameStr || codeStr,
+      productCode: codeStr,
+      productId: null,
+      category: 'Unmatched',
+      parentCategory: 'FOOD',
+      uom: 'Pcs',
+      quantitySold: qty,
+      sellingPrice: lineSellingPrice,
+      revenue: lineRev,
+      cogs: 0,
+      grossProfit: lineRev,
+      matchStatus: 'unmatched',
       ingredientsUsed: [],
     };
 
@@ -763,9 +763,9 @@ const importSales = asyncHandler(async (req, res) => {
   }
 
   // Aggregate totals
-  const totalRevenue = saleLines.reduce((s, l) => s + (l.revenue     || 0), 0);
-  const totalCOGS    = saleLines.reduce((s, l) => s + (l.cogs        || 0), 0);
-  const grossProfit  = totalRevenue - totalCOGS;
+  const totalRevenue = saleLines.reduce((s, l) => s + (l.revenue || 0), 0);
+  const totalCOGS = saleLines.reduce((s, l) => s + (l.cogs || 0), 0);
+  const grossProfit = totalRevenue - totalCOGS;
   const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
   // Financial breakdown extraction with safe fallback handling
@@ -781,11 +781,11 @@ const importSales = asyncHandler(async (req, res) => {
 
   // Create SalesRecord
   const salesRecord = await SalesRecord.create({
-    saleDate:    saleDate ? new Date(saleDate) : new Date(),
-    reference:   reference || '',
-    notes:       notes || 'Imported from POS/Excel report',
-    source:      'excel_import',
-    lines:       saleLines,
+    saleDate: saleDate ? new Date(saleDate) : new Date(),
+    reference: reference || '',
+    notes: notes || 'Imported from POS/Excel report',
+    source: 'excel_import',
+    lines: saleLines,
     totalRevenue,
     subTotal,
     addCharge,
@@ -795,7 +795,7 @@ const importSales = asyncHandler(async (req, res) => {
     totalCOGS,
     grossProfit,
     profitMargin,
-    importedBy:  req.user._id,
+    importedBy: req.user._id,
   });
 
   // ── 3. Single atomic bulk write for all stock deductions ──
@@ -820,8 +820,8 @@ const importSales = asyncHandler(async (req, res) => {
       const mat = rawMaterialById.get(matId);
       const unitCost = mat?.unitCost || 0;
       return {
-        material:  mat?._id || matId,
-        quantity:  Number(qty),
+        material: mat?._id || matId,
+        quantity: Number(qty),
         unitCost,
         totalCost: Number((unitCost * qty).toFixed(2)),
       };
@@ -835,19 +835,19 @@ const importSales = asyncHandler(async (req, res) => {
     const totalAmount = resolvedItems.reduce((s, i) => s + i.totalCost, 0);
     transaction = await StockTransaction.create({
       voucherType: resolvedVoucherType,
-      voucherNo:   await generateVoucherNo(resolvedVoucherType),
-      type:        'out',
-      items:       resolvedItems,
-      material:    resolvedItems[0].material,
-      quantity:    resolvedItems[0].quantity,
-      unitCost:    resolvedItems[0].unitCost,
-      reason:      resolvedReason,
-      reference:   reference || '',
-      notes:       notes || (isManual ? 'Manual Sales Registration' : 'Automated stock deduction from sales report'),
-      date:        saleDate ? new Date(saleDate) : new Date(),
+      voucherNo: await generateVoucherNo(resolvedVoucherType),
+      type: 'out',
+      items: resolvedItems,
+      material: resolvedItems[0].material,
+      quantity: resolvedItems[0].quantity,
+      unitCost: resolvedItems[0].unitCost,
+      reason: resolvedReason,
+      reference: reference || '',
+      notes: notes || (isManual ? 'Manual Sales Registration' : 'Automated stock deduction from sales report'),
+      date: saleDate ? new Date(saleDate) : new Date(),
       performedBy: req.user._id,
       totalAmount,
-      status:      'pending',
+      status: 'pending',
       trail: [{ action: 'pending', by: req.user._id, byName: req.user.name, byRole: req.user.role }],
     });
 
@@ -896,7 +896,7 @@ const parseImageSales = asyncHandler(async (req, res) => {
   const { imageBase64, mimeType = 'image/jpeg' } = req.body;
   if (!imageBase64) { res.status(400); throw new Error('No image data provided'); }
 
-  const https    = require('https');
+  const https = require('https');
   const querystring = require('querystring');
 
   const OCR_API_KEY = process.env.OCR_API_KEY || 'helloworld'; // helloworld = free demo key
@@ -905,18 +905,18 @@ const parseImageSales = asyncHandler(async (req, res) => {
   const ocrText = await new Promise((resolve, reject) => {
     const postData = querystring.stringify({
       base64Image: `data:${mimeType};base64,${imageBase64}`,
-      language:    'eng',
-      isTable:     'true',
-      OCREngine:   '2',
-      apikey:      OCR_API_KEY,
+      language: 'eng',
+      isTable: 'true',
+      OCREngine: '2',
+      apikey: OCR_API_KEY,
     });
 
     const options = {
       hostname: 'api.ocr.space',
-      path:     '/parse/image',
-      method:   'POST',
-      headers:  {
-        'Content-Type':   'application/x-www-form-urlencoded',
+      path: '/parse/image',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(postData),
       },
     };
@@ -972,9 +972,9 @@ const parseImageSales = asyncHandler(async (req, res) => {
     if (nums.length < 2) continue; // need at least qty + one amount
 
     // Heuristic: first small number = qty, last large number = total amount, middle = avg
-    const qty      = nums[0] <= 1000 ? nums[0] : 1;
+    const qty = nums[0] <= 1000 ? nums[0] : 1;
     const totalAmt = nums[nums.length - 1];
-    const avgAmt   = nums.length >= 3 ? nums[nums.length - 2] : (qty > 0 ? totalAmt / qty : totalAmt);
+    const avgAmt = nums.length >= 3 ? nums[nums.length - 2] : (qty > 0 ? totalAmt / qty : totalAmt);
 
     // Extract product name — text between code and first number
     const afterCode = line.slice(line.indexOf(codeMatch[0]) + codeMatch[0].length);

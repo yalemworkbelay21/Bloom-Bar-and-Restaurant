@@ -537,7 +537,7 @@ const Topbar = ({ onMenuClick, onToggleCollapse, title }) => {
           <div>
             <p className="text-xl font-bold text-ink-900">{title}</p>
             <p className="text-xs text-ink-500">
-              {new Date().toLocaleDateString('en-US', {
+              {new Date().toLocaleDateString(language === 'am' ? 'am-ET' : 'en-US', {
                 weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
               })}
             </p>
@@ -555,7 +555,9 @@ const Topbar = ({ onMenuClick, onToggleCollapse, title }) => {
             <span className={`h-1.5 w-1.5 rounded-full ${timeoutMinutes === 0 ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'}`} />
             <Clock size={12} className="text-slate-400" />
             <span className="text-[11px] font-medium text-slate-600">
-              {timeoutMinutes === 0 ? 'Timeout: Off' : `Auto-Logout: ${timeoutMinutes}m`}
+              {timeoutMinutes === 0
+                ? (language === 'am' ? 'ጊዜ: ጠፍቷል' : 'Timeout: Off')
+                : (language === 'am' ? `ራስ-ሰር መውጣት: ${timeoutMinutes}ደ` : `Auto-Logout: ${timeoutMinutes}m`)}
             </span>
           </div>
 

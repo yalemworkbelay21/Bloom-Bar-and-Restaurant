@@ -127,8 +127,8 @@ export default function Settings() {
 
   // System settings state (Admin)
   const [systemForm, setSystemForm] = useState({
-    hotelName: 'Bloom Bar and Restaurant   Café',
-    systemEmail: 'info@Bloom Bar and Restaurant   Café.com',
+    hotelName: 'Bloom Bar and Restaurant',
+    systemEmail: 'info@Bloom Bar and Restaurant.com',
     phone: '+251 911 000 111',
     address: 'Addis Ababa, Ethiopia',
     currency: 'ETB',
@@ -721,9 +721,9 @@ export default function Settings() {
       setSystemForm((prev) => ({ ...prev, ...res.data }));
       await refreshPermissions(res.data);
       if (res.data?.rawMaterialsUpdated > 0) {
-        setSystemSuccess(`Bloom Bar and Restaurant  Café settings saved! Successfully adjusted ${res.data.rawMaterialsUpdated} raw materials in inventory.`);
+        setSystemSuccess(`Bloom Bar and Restaurant settings saved! Successfully adjusted ${res.data.rawMaterialsUpdated} raw materials in inventory.`);
       } else {
-        setSystemSuccess('Bloom Bar and Restaurant  Café system settings & role permissions saved and activated immediately.');
+        setSystemSuccess('Bloom Bar and Restaurant system settings & role permissions saved and activated immediately.');
       }
       setTimeout(() => setSystemSuccess(''), 5000);
     } catch (err) {
@@ -807,7 +807,7 @@ export default function Settings() {
           Account &amp; System Settings
         </h1>
         <p className="text-sm text-ink-400 mt-1">
-          Manage your personal credentials, profile identity, and Bloom Bar and Restaurant   Caféhotel management configurations
+          Manage your personal credentials, profile identity, and Bloom Bar and Restauranthotel management configurations
         </p>
       </div>
 
@@ -908,8 +908,8 @@ export default function Settings() {
           <button
             onClick={() => setTab('dev')}
             className={`flex items-center gap-2 border-b-2 px-3.5 py-3 text-sm font-semibold transition whitespace-nowrap ${currentTab === 'dev'
-                ? 'border-amber-500 text-amber-600'
-                : 'border-transparent text-amber-500/70 hover:text-amber-600'
+              ? 'border-amber-500 text-amber-600'
+              : 'border-transparent text-amber-500/70 hover:text-amber-600'
               }`}
           >
             <span className="flex items-center gap-1.5">
@@ -1000,7 +1000,7 @@ export default function Settings() {
               </div>
               <div className="flex justify-between">
                 <span>Enterprise:</span>
-                <span className="font-semibold text-ink-800">Bloom Bar and Restaurant   Café</span>
+                <span className="font-semibold text-ink-800">Bloom Bar and Restaurant</span>
               </div>
               <div className="flex justify-between">
                 <span>Contact Phone:</span>
@@ -1321,7 +1321,7 @@ export default function Settings() {
                       value={systemForm.hotelName}
                       onChange={(e) => setSystemForm({ ...systemForm, hotelName: e.target.value })}
                       className="w-full rounded-xl border border-ink-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-500"
-                      placeholder="Bloom Bar and Restaurant   Café"
+                      placeholder="Bloom Bar and Restaurant"
                     />
                   </div>
                 </div>
@@ -1354,7 +1354,7 @@ export default function Settings() {
                       value={systemForm.systemEmail}
                       onChange={(e) => setSystemForm({ ...systemForm, systemEmail: e.target.value })}
                       className="w-full rounded-xl border border-ink-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-500"
-                      placeholder="info@Bloom Bar and Restaurant   Café.com"
+                      placeholder="info@Bloom Bar and Restaurant.com"
                     />
                   </div>
                 </div>
@@ -1532,8 +1532,8 @@ export default function Settings() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-ink-900">Modern Material UI Icons Mode</p>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${systemForm.sidebarMaterialIcons !== false
-                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                          : 'bg-slate-200 text-slate-700 border border-slate-300'
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'bg-slate-200 text-slate-700 border border-slate-300'
                         }`}>
                         {systemForm.sidebarMaterialIcons !== false ? 'Material Icons (Active)' : 'Classic Clean (Minimal)'}
                       </span>
@@ -1569,8 +1569,8 @@ export default function Settings() {
                           type="button"
                           onClick={() => setSystemForm({ ...systemForm, sidebarTheme: theme.id })}
                           className={`relative p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between overflow-hidden group ${isSelected
-                              ? 'border-blue-600 ring-2 ring-blue-500/30 shadow-md bg-blue-50/20'
-                              : 'border-ink-200 hover:border-ink-300 bg-white hover:shadow-xs'
+                            ? 'border-blue-600 ring-2 ring-blue-500/30 shadow-md bg-blue-50/20'
+                            : 'border-ink-200 hover:border-ink-300 bg-white hover:shadow-xs'
                             }`}
                         >
                           <div className="flex items-center justify-between mb-2.5">
@@ -1583,8 +1583,8 @@ export default function Settings() {
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-extrabold uppercase tracking-wide ${theme.isLight
-                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
                                 }`}>
                                 {theme.category}
                               </span>
@@ -2641,8 +2641,8 @@ export default function Settings() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-ink-900">Subsystem Suite (Restaurant POS &amp; Ordering)</p>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${devLicenseForm?.subsystem !== false
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                        : 'bg-slate-200 text-slate-700 border border-slate-300'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-slate-200 text-slate-700 border border-slate-300'
                       }`}>
                       {devLicenseForm?.subsystem !== false ? 'Licensed & Active' : 'Locked / Hidden (Off)'}
                     </span>
@@ -2666,8 +2666,8 @@ export default function Settings() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-ink-900">Digital Menu Suite (Customer QR &amp; Self-Ordering)</p>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${devLicenseForm?.digitalMenu !== false
-                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                        : 'bg-slate-200 text-slate-700 border border-slate-300'
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      : 'bg-slate-200 text-slate-700 border border-slate-300'
                       }`}>
                       {devLicenseForm?.digitalMenu !== false ? 'Licensed & Active' : 'Locked / Hidden (Off)'}
                     </span>
@@ -2693,8 +2693,8 @@ export default function Settings() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-ink-900">Finance &amp; Expenses Suite</p>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${devLicenseForm?.finance !== false
-                        ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                        : 'bg-slate-200 text-slate-700 border border-slate-300'
+                      ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                      : 'bg-slate-200 text-slate-700 border border-slate-300'
                       }`}>
                       {devLicenseForm?.finance !== false ? 'Licensed & Active' : 'Locked / Hidden (Off)'}
                     </span>
@@ -2720,8 +2720,8 @@ export default function Settings() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-ink-900">Allow Hotel Admin Theme &amp; Icon Customization</p>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${devLicenseForm?.themeCustomization !== false
-                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                        : 'bg-rose-100 text-rose-700 border border-rose-200'
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      : 'bg-rose-100 text-rose-700 border border-rose-200'
                       }`}>
                       {devLicenseForm?.themeCustomization !== false ? 'Allowed (Visible to Admin)' : 'Disallowed (Developer Only)'}
                     </span>
@@ -2747,8 +2747,8 @@ export default function Settings() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-ink-900">Modern Material UI Icons Mode</p>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${devLicenseForm?.materialIcons !== false
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                        : 'bg-slate-200 text-slate-700 border border-slate-300'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-slate-200 text-slate-700 border border-slate-300'
                       }`}>
                       {devLicenseForm?.materialIcons !== false ? 'Active (Material UI)' : 'Classic Clean (Off)'}
                     </span>
@@ -2791,8 +2791,8 @@ export default function Settings() {
                     type="button"
                     onClick={() => setDevLicenseForm(prev => ({ ...prev, sidebarTheme: theme.id }))}
                     className={`relative p-3 rounded-2xl border text-left transition-all flex flex-col justify-between overflow-hidden group ${isSelected
-                        ? 'border-amber-500 ring-2 ring-amber-400/40 shadow-md bg-amber-50/20'
-                        : 'border-ink-200 hover:border-ink-300 bg-white hover:shadow-xs'
+                      ? 'border-amber-500 ring-2 ring-amber-400/40 shadow-md bg-amber-50/20'
+                      : 'border-ink-200 hover:border-ink-300 bg-white hover:shadow-xs'
                       }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -2805,8 +2805,8 @@ export default function Settings() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-extrabold uppercase tracking-wide ${theme.isLight
-                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200'
                           }`}>
                           {theme.category}
                         </span>
@@ -2901,6 +2901,13 @@ export default function Settings() {
       {/* ── Tab: Order Printers ── */}
       {currentTab === 'printers' && (() => {
         // loadPrinters is defined at component scope above
+        const testStatus = (typeof printTestStatus !== 'undefined' && printTestStatus) ? printTestStatus : {};
+        const safeSetPrintTestStatus = (fn) => {
+          if (typeof setPrintTestStatus === 'function') {
+            setPrintTestStatus(fn);
+          }
+        };
+
         const openAdd = () => {
           setPrinterForm(blankPrinter);
           setEditingPrinterId(null);
@@ -3014,24 +3021,24 @@ export default function Settings() {
 
         const printTestPage = async (printerOrForm) => {
           const key = printerOrForm._id || `${printerOrForm.ipAddress}:${printerOrForm.port}`;
-          setPrintTestStatus(prev => ({ ...prev, [key]: 'pending' }));
+          safeSetPrintTestStatus(prev => ({ ...prev, [key]: 'pending' }));
           setPrinterError('');
           try {
             const res = await localPrintDispatcher.printTestPage(printerOrForm);
             if (res.ok) {
-              setPrintTestStatus(prev => ({ ...prev, [key]: 'ok' }));
+              safeSetPrintTestStatus(prev => ({ ...prev, [key]: 'ok' }));
               setPrinterSuccess(res.message || `✓ Test page printed directly to ${printerOrForm.ipAddress}:${printerOrForm.port} via TCP! Check printer.`);
               setTimeout(() => {
                 setPrinterSuccess('');
-                setPrintTestStatus(prev => ({ ...prev, [key]: null }));
+                safeSetPrintTestStatus(prev => ({ ...prev, [key]: null }));
               }, 6000);
             } else {
-              setPrintTestStatus(prev => ({ ...prev, [key]: 'fail' }));
+              safeSetPrintTestStatus(prev => ({ ...prev, [key]: 'fail' }));
               setPrinterError(res.error || 'Test print failed');
               setTimeout(() => setPrinterError(''), 6000);
             }
           } catch (err) {
-            setPrintTestStatus(prev => ({ ...prev, [key]: 'fail' }));
+            safeSetPrintTestStatus(prev => ({ ...prev, [key]: 'fail' }));
             setPrinterError(err.message || 'Test print failed');
             setTimeout(() => setPrinterError(''), 6000);
           }
@@ -3172,9 +3179,9 @@ export default function Settings() {
                                   disabled={ping === 'pending'}
                                   title="Test Connection"
                                   className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${ping === 'ok' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' :
-                                      ping === 'fail' ? 'border-red-300 bg-red-50 text-red-600' :
-                                        ping === 'pending' ? 'border-ink-200 bg-ink-50 text-ink-400' :
-                                          'border-ink-200 bg-white text-ink-600 hover:border-violet-300 hover:text-violet-700'
+                                    ping === 'fail' ? 'border-red-300 bg-red-50 text-red-600' :
+                                      ping === 'pending' ? 'border-ink-200 bg-ink-50 text-ink-400' :
+                                        'border-ink-200 bg-white text-ink-600 hover:border-violet-300 hover:text-violet-700'
                                     }`}
                                 >
                                   {ping === 'ok' ? <><Wifi size={12} className="text-emerald-500" /> Online</> :
@@ -3188,17 +3195,17 @@ export default function Settings() {
                               {p.ipAddress && (
                                 <button
                                   onClick={() => printTestPage(p)}
-                                  disabled={printTestStatus[p._id || `${p.ipAddress}:${p.port}`] === 'pending'}
+                                  disabled={testStatus[p._id || `${p.ipAddress}:${p.port}`] === 'pending'}
                                   title="Send a sample test print ticket"
-                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${printTestStatus[p._id || `${p.ipAddress}:${p.port}`] === 'ok' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' :
-                                      printTestStatus[p._id || `${p.ipAddress}:${p.port}`] === 'fail' ? 'border-red-300 bg-red-50 text-red-600' :
-                                        printTestStatus[p._id || `${p.ipAddress}:${p.port}`] === 'pending' ? 'border-ink-200 bg-ink-50 text-ink-400' :
-                                          'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'
+                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${testStatus[p._id || `${p.ipAddress}:${p.port}`] === 'ok' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' :
+                                    testStatus[p._id || `${p.ipAddress}:${p.port}`] === 'fail' ? 'border-red-300 bg-red-50 text-red-600' :
+                                      testStatus[p._id || `${p.ipAddress}:${p.port}`] === 'pending' ? 'border-ink-200 bg-ink-50 text-ink-400' :
+                                        'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'
                                     }`}
                                 >
-                                  {printTestStatus[p._id || `${p.ipAddress}:${p.port}`] === 'ok' ? '✓ Printed' :
-                                    printTestStatus[p._id || `${p.ipAddress}:${p.port}`] === 'fail' ? '✗ Print Failed' :
-                                      printTestStatus[p._id || `${p.ipAddress}:${p.port}`] === 'pending' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-violet-600 border-t-transparent rounded-full" /> Printing…</> :
+                                  {testStatus[p._id || `${p.ipAddress}:${p.port}`] === 'ok' ? '✓ Printed' :
+                                    testStatus[p._id || `${p.ipAddress}:${p.port}`] === 'fail' ? '✗ Print Failed' :
+                                      testStatus[p._id || `${p.ipAddress}:${p.port}`] === 'pending' ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-violet-600 border-t-transparent rounded-full" /> Printing…</> :
                                         <><Printer size={12} /> Test Page</>
                                   }
                                 </button>
@@ -3210,7 +3217,7 @@ export default function Settings() {
                             onClick={() => toggleEnabled(p)}
                             title={p.enabled ? 'Disable printer' : 'Enable printer'}
                             className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${p.enabled ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100' :
-                                'border-ink-200 bg-white text-ink-500 hover:bg-ink-50'
+                              'border-ink-200 bg-white text-ink-500 hover:bg-ink-50'
                               }`}
                           >
                             {p.enabled ? <ToggleRight size={14} className="text-violet-600" /> : <ToggleLeft size={14} />}
@@ -3356,11 +3363,10 @@ export default function Settings() {
                                 }));
                                 localStorage.setItem('bloom_preferred_paper_width', w.key);
                               }}
-                              className={`rounded-xl border py-2 text-xs font-semibold transition ${
-                                printerForm.paperWidth === w.key || (w.key === '60mm' && /60/i.test(printerForm.paperWidth))
-                                  ? 'border-violet-600 bg-violet-600 text-white shadow-sm ring-2 ring-violet-400/30'
-                                  : 'border-ink-200 bg-white text-ink-700 hover:border-violet-300'
-                              }`}
+                              className={`rounded-xl border py-2 text-xs font-semibold transition ${printerForm.paperWidth === w.key || (w.key === '60mm' && /60/i.test(printerForm.paperWidth))
+                                ? 'border-violet-600 bg-violet-600 text-white shadow-sm ring-2 ring-violet-400/30'
+                                : 'border-ink-200 bg-white text-ink-700 hover:border-violet-300'
+                                }`}
                             >{w.label}</button>
                           ))}
                         </div>
@@ -3374,8 +3380,8 @@ export default function Settings() {
                             type="button"
                             onClick={() => setPrinterForm(f => ({ ...f, connectionType: 'system' }))}
                             className={`flex items-start gap-3 p-3 rounded-xl border text-left transition ${printerForm.connectionType === 'system'
-                                ? 'border-violet-600 bg-violet-50/70 ring-2 ring-violet-600/30'
-                                : 'border-ink-200 bg-white hover:bg-ink-50'
+                              ? 'border-violet-600 bg-violet-50/70 ring-2 ring-violet-600/30'
+                              : 'border-ink-200 bg-white hover:bg-ink-50'
                               }`}
                           >
                             <Printer size={18} className={`mt-0.5 flex-shrink-0 ${printerForm.connectionType === 'system' ? 'text-violet-600' : 'text-ink-400'}`} />
@@ -3391,8 +3397,8 @@ export default function Settings() {
                             type="button"
                             onClick={() => setPrinterForm(f => ({ ...f, connectionType: 'network' }))}
                             className={`flex items-start gap-3 p-3 rounded-xl border text-left transition ${printerForm.connectionType === 'network'
-                                ? 'border-violet-600 bg-violet-50/70 ring-2 ring-violet-600/30'
-                                : 'border-ink-200 bg-white hover:bg-ink-50'
+                              ? 'border-violet-600 bg-violet-50/70 ring-2 ring-violet-600/30'
+                              : 'border-ink-200 bg-white hover:bg-ink-50'
                               }`}
                           >
                             <Wifi size={18} className={`mt-0.5 flex-shrink-0 ${printerForm.connectionType === 'network' ? 'text-violet-600' : 'text-ink-400'}`} />
@@ -3485,7 +3491,7 @@ export default function Settings() {
                           value={printerForm.headerLine1}
                           onChange={e => setPrinterForm(f => ({ ...f, headerLine1: e.target.value }))}
                           className="w-full rounded-xl border border-ink-200 py-2.5 px-3 text-sm outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                          placeholder="Bloom Bar and Restaurant  Café"
+                          placeholder="Bloom Bar and Restaurant"
                         />
                       </div>
 
@@ -3571,9 +3577,9 @@ export default function Settings() {
                               onClick={() => pingPrinter(printerForm.ipAddress, printerForm.port)}
                               disabled={pingStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending'}
                               className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${pingStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'ok' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' :
-                                  pingStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'fail' ? 'border-red-300 bg-red-50 text-red-600' :
-                                    pingStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending' ? 'border-ink-200 bg-ink-100 text-ink-400' :
-                                      'border-ink-200 bg-white text-ink-700 hover:bg-ink-50'
+                                pingStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'fail' ? 'border-red-300 bg-red-50 text-red-600' :
+                                  pingStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending' ? 'border-ink-200 bg-ink-100 text-ink-400' :
+                                    'border-ink-200 bg-white text-ink-700 hover:bg-ink-50'
                                 }`}
                             >
                               {pingStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'ok' ? '✓ Connected' :
@@ -3585,16 +3591,16 @@ export default function Settings() {
                             <button
                               type="button"
                               onClick={() => printTestPage(printerForm)}
-                              disabled={printTestStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending'}
-                              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${printTestStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'ok' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' :
-                                  printTestStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'fail' ? 'border-red-300 bg-red-50 text-red-600' :
-                                    printTestStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending' ? 'border-ink-200 bg-ink-100 text-ink-400' :
-                                      'border-violet-300 bg-violet-600 text-white hover:bg-violet-700 shadow-sm'
+                              disabled={testStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending'}
+                              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${testStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'ok' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' :
+                                testStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'fail' ? 'border-red-300 bg-red-50 text-red-600' :
+                                  testStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending' ? 'border-ink-200 bg-ink-100 text-ink-400' :
+                                    'border-violet-300 bg-violet-600 text-white hover:bg-violet-700 shadow-sm'
                                 }`}
                             >
-                              {printTestStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'ok' ? '✓ Page Sent' :
-                                printTestStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'fail' ? '✗ Send Failed' :
-                                  printTestStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending' ? 'Sending…' :
+                              {testStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'ok' ? '✓ Page Sent' :
+                                testStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'fail' ? '✗ Send Failed' :
+                                  testStatus[`${printerForm.ipAddress}:${printerForm.port}`] === 'pending' ? 'Sending…' :
                                     <><Printer size={12} /> Print Test Page</>}
                             </button>
                           </div>
@@ -3833,8 +3839,8 @@ export default function Settings() {
                           type="button"
                           onClick={() => togglePreset(rate)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${isIncluded
-                              ? 'bg-blue-600 text-white shadow-sm'
-                              : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
                             }`}
                         >
                           {isIncluded && <Check size={13} />}
@@ -3898,8 +3904,8 @@ export default function Settings() {
                               <span
                                 key={rate}
                                 className={`px-2.5 py-1 rounded text-[10px] font-bold border transition ${isDefault && systemForm.enableServiceCharge
-                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                                  ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                  : 'bg-slate-100 text-slate-600 border-slate-200'
                                   }`}
                               >
                                 {rate}% {isDefault && systemForm.enableServiceCharge && '✓'}
@@ -3940,14 +3946,14 @@ export default function Settings() {
                     </p>
                     <div className="bg-amber-50/60 font-mono text-[11px] text-ink-800 p-3.5 rounded-lg border border-amber-200/60 leading-relaxed">
                       <div className="text-center font-bold text-xs mb-1">
-                        {systemForm.hotelName || 'Bloom Bar and Restaurant   Café'}
+                        {systemForm.hotelName || 'Bloom Bar and Restaurant'}
                       </div>
                       <div className="text-center text-[10px] text-ink-500 mb-2">
                         {systemForm.address || 'Addis Ababa, Ethiopia'}
                       </div>
                       <div className="border-b border-dashed border-ink-300 my-1.5" />
                       <div className="flex justify-between">
-                        <span>1x Bloom Bar and Restaurant  Bun</span>
+                        <span>1x Bloom Bar & Restaurant  Bun</span>
                         <span>ETB 35.00</span>
                       </div>
                       <div className="flex justify-between">

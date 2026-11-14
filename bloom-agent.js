@@ -27,7 +27,7 @@ if (fs.existsSync(CONFIG_FILE)) {
   try {
     const saved = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
     config = { ...config, ...saved };
-  } catch (_) {}
+  } catch (_) { }
 }
 
 if (process.argv[2]) {
@@ -88,7 +88,7 @@ function sendRawToPrinter(ip, port, data) {
     const cleanup = (err) => {
       if (settled) return;
       settled = true;
-      try { socket.destroy(); } catch (_) {}
+      try { socket.destroy(); } catch (_) { }
       if (err) reject(err);
       else resolve({ ok: true });
     };
@@ -301,7 +301,7 @@ async function pollLoop() {
               const lines = [
                 PCL_RESET + PCL_SETUP,
                 '============================================================',
-                '                 BLOOM BAR & RESTAURANT                     ',
+                '                 Bloom Bar & Restaurant& RESTAURANT                     ',
                 '                     CUSTOMER RECEIPT                       ',
                 '============================================================',
                 `Order #: ${order.orderNo || '--'}    Table: ${order.tableNo || '--'}`,
@@ -320,7 +320,7 @@ async function pollLoop() {
               const items = (order.items || []).map(i => `  ${(i.productName || '').padEnd(18).slice(0, 18)} x${i.quantity}  ${Number(i.totalPrice || 0).toFixed(2)}`).join('\n');
               receiptData = Buffer.concat([
                 Buffer.from([0x1b, 0x40, 0x1b, 0x61, 0x01, 0x1b, 0x21, 0x30]),
-                Buffer.from('BLOOM BAR & RESTAURANT\n', 'latin1'),
+                Buffer.from('Bloom Bar & Restaurant& RESTAURANT\n', 'latin1'),
                 Buffer.from([0x1b, 0x21, 0x00]),
                 Buffer.from(`Order #${order.orderNo || '--'}  Table: ${order.tableNo || '--'}\n`, 'latin1'),
                 Buffer.from(`Date: ${new Date().toLocaleString('en-ET')}\n`, 'latin1'),
@@ -346,7 +346,7 @@ async function pollLoop() {
             }
           }
         }
-      } catch (_) {}
+      } catch (_) { }
 
       // Continue polling immediately
       setImmediate(pollLoop);
@@ -383,7 +383,7 @@ function startLocalServer(port = 5000) {
     req.on('data', chunk => body += chunk);
     req.on('end', async () => {
       let data = {};
-      try { data = JSON.parse(body || '{}'); } catch (_) {}
+      try { data = JSON.parse(body || '{}'); } catch (_) { }
 
       res.setHeader('Content-Type', 'application/json');
 
@@ -488,7 +488,7 @@ function startLocalServer(port = 5000) {
           const lines = [
             PCL_RESET + PCL_SETUP,
             '============================================================',
-            '                 BLOOM BAR & RESTAURANT                     ',
+            '                 Bloom Bar & Restaurant& RESTAURANT                     ',
             '                     CUSTOMER RECEIPT                       ',
             '============================================================',
             `Order #: ${order.orderNo || '--'}    Table: ${order.tableNo || '--'}`,
@@ -507,7 +507,7 @@ function startLocalServer(port = 5000) {
           const items = (order.items || []).map(i => `  ${(i.productName || '').padEnd(18).slice(0, 18)} x${i.quantity}  ${Number(i.totalPrice || 0).toFixed(2)}`).join('\n');
           receiptData = Buffer.concat([
             Buffer.from([0x1b, 0x40, 0x1b, 0x61, 0x01, 0x1b, 0x21, 0x30]),
-            Buffer.from('BLOOM BAR & RESTAURANT\n', 'latin1'),
+            Buffer.from('Bloom Bar & Restaurant& RESTAURANT\n', 'latin1'),
             Buffer.from([0x1b, 0x21, 0x00]),
             Buffer.from(`Order #${order.orderNo || '--'}  Table: ${order.tableNo || '--'}\n`, 'latin1'),
             Buffer.from(`Date: ${new Date().toLocaleString('en-ET')}\n`, 'latin1'),

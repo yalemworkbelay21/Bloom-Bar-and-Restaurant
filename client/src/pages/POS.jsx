@@ -512,10 +512,10 @@ export default function POS() {
       }
 
       // Print KOT on browser (browser print dialog fallback)
-      posPrint.printKOT(savedOrder, { businessName: "Bloom Bar and Restaurant  Café" });
+      posPrint.printKOT(savedOrder, { businessName: "Bloom Bar and Restaurant" });
 
       // Auto-fire to network thermal printer (silent, non-blocking)
-      firePrinter('kot', savedOrder, { businessName: "Bloom Bar and Restaurant  Café" });
+      firePrinter('kot', savedOrder, { businessName: "Bloom Bar and Restaurant" });
 
       // Reset cart
       setHeldOrderId(null);
@@ -589,13 +589,13 @@ export default function POS() {
 
       // Print receipt in browser (browser print dialog fallback)
       posPrint.printReceipt(savedSale, {
-        hotelName: "Bloom Bar and Restaurant  Café",
+        hotelName: "Bloom Bar and Restaurant",
         taxRate: settings.taxRate,
       });
 
       // Auto-fire to network thermal printer (silent, non-blocking)
       firePrinter('receipt', savedSale, {
-        hotelName: "Bloom Bar and Restaurant  Café",
+        hotelName: "Bloom Bar and Restaurant",
         taxRate: settings.taxRate,
         currency: "ETB",
       });
@@ -775,7 +775,7 @@ export default function POS() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontWeight: 800, fontSize: 16, color: "#0f172a", letterSpacing: 0.3 }}>
-                Bloom Bar and Restaurant  Café
+                Bloom Bar and Restaurant
               </span>
               <span
                 style={{
@@ -1741,7 +1741,7 @@ export default function POS() {
                   type="button"
                   onClick={() =>
                     posPrint.printReceipt(lastOrder, {
-                      hotelName: "Bloom Bar and Restaurant  Café",
+                      hotelName: "Bloom Bar and Restaurant",
                       taxRate: settings.taxRate,
                     })
                   }
@@ -1766,7 +1766,7 @@ export default function POS() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => posPrint.printKOT(lastOrder, { businessName: "Bloom Bar and Restaurant  Café" })}
+                  onClick={() => posPrint.printKOT(lastOrder, { businessName: "Bloom Bar and Restaurant" })}
                   style={{
                     flex: 1,
                     padding: "7px",
