@@ -57,7 +57,6 @@ const STATUS_CONFIG = {
 
 export default function CaptainOrder() {
   const [orders, setOrders] = useState([]);
-  const [allPendingOrders, setAllPendingOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQ, setSearchQ] = useState("");
@@ -94,13 +93,8 @@ export default function CaptainOrder() {
       let url = `/captain-orders?limit=300`;
       if (dateVal) url += `&date=${dateVal}`;
       if (statusFilter && statusFilter !== "all") url += `&status=${statusFilter}`;
-      
-      const [res, pendingRes] = await Promise.all([
-        api.get(url),
-        api.get('/captain-orders?status=pending_approval&limit=50').catch(() => ({ data: [] })),
-      ]);
+      const res = await api.get(url);
       setOrders(res.data || []);
-      setAllPendingOrders(pendingRes.data || []);
     } catch (e) {
       showToast("Failed to load captain orders", "error");
     } finally {
@@ -252,11 +246,7 @@ export default function CaptainOrder() {
     ) && o.status !== "cancelled" && o.status !== "voided" && o.status !== "paid"
   );
 
-  // Merge pending verification orders from both views so table verification banner NEVER disappears
-  const pendingMap = new Map();
-  allPendingOrders.forEach((o) => pendingMap.set(String(o._id), o));
-  orders.filter(isAwaitingWaiter).forEach((o) => pendingMap.set(String(o._id), o));
-  const pendingOrders = Array.from(pendingMap.values());
+  const pendingOrders = orders.filter(isAwaitingWaiter);
   const pendingCount = pendingOrders.length;
   const totalCount = orders.length;
   const heldCount = orders.filter((o) => o.status === "held").length;

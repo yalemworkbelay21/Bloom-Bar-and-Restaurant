@@ -768,6 +768,17 @@ const importSales = asyncHandler(async (req, res) => {
   const grossProfit  = totalRevenue - totalCOGS;
   const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
+  // Financial breakdown extraction with safe fallback handling
+  const finSummary = req.body.financialSummary || {};
+  const parsedSubTotal = Number(req.body.subTotal ?? finSummary.subTotal);
+  const subTotal = (!isNaN(parsedSubTotal) && parsedSubTotal > 0) ? parsedSubTotal : totalRevenue;
+  const addCharge = Number(req.body.addCharge ?? finSummary.addCharge ?? 0) || 0;
+  const discount = Number(req.body.discount ?? finSummary.discount ?? 0) || 0;
+  const totalTax = Number(req.body.totalTax ?? finSummary.totalTax ?? 0) || 0;
+  const calculatedGrand = Math.round((subTotal + addCharge - discount + totalTax) * 100) / 100;
+  const parsedGrandTotal = Number(req.body.grandTotal ?? finSummary.grandTotal);
+  const grandTotal = (!isNaN(parsedGrandTotal) && parsedGrandTotal > 0) ? parsedGrandTotal : calculatedGrand;
+
   // Create SalesRecord
   const salesRecord = await SalesRecord.create({
     saleDate:    saleDate ? new Date(saleDate) : new Date(),
@@ -776,6 +787,11 @@ const importSales = asyncHandler(async (req, res) => {
     source:      'excel_import',
     lines:       saleLines,
     totalRevenue,
+    subTotal,
+    addCharge,
+    discount,
+    totalTax,
+    grandTotal,
     totalCOGS,
     grossProfit,
     profitMargin,
@@ -841,19 +857,35 @@ const importSales = asyncHandler(async (req, res) => {
 
   invalidateDashboardCache();
 
+  const summaryPayload = {
+    totalRevenue,
+    subTotal,
+    addCharge,
+    discount,
+    totalTax,
+    grandTotal,
+    totalCOGS,
+    grossProfit,
+    profitMargin: profitMargin.toFixed(1) + '%',
+    totalSoldProducts: allSoldProducts.length,
+    matchedCount: saleLines.length - notFound.length,
+    unmatchedCount: notFound.length,
+    recipeDeductionsCount: Object.keys(materialDeductions).length,
+  };
+
+  if (tg && typeof tg.notifySalesImported === 'function') {
+    try {
+      tg.notifySalesImported(salesRecord, summaryPayload, req.user);
+    } catch (err) {
+      console.error('[POS Import] Telegram notification failed:', err.message);
+    }
+  }
+
   res.status(201).json({
     message: 'Sales imported. Stock deducted and P&L recorded.',
     salesRecord,
     transactionId: transaction?._id,
-    summary: {
-      totalRevenue,
-      totalCOGS,
-      grossProfit,
-      profitMargin: profitMargin.toFixed(1) + '%',
-      totalSoldProducts: allSoldProducts.length,
-      matchedCount: saleLines.length - notFound.length,
-      unmatchedCount: notFound.length,
-    },
+    summary: summaryPayload,
     items: allSoldProducts,
     unmatchedProducts: notFound,
     duplicateNotice,

@@ -12,10 +12,20 @@ import {
 /* ── empty manual sale row ── */
 const emptyRow = () => ({ code: '', name: '', qty: 1, avgAmt: 0, totalAmt: 0, _id: Date.now() + Math.random() });
 
+/* ── comma-safe number parser helper ── */
+function parseSafeNum(val) {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  const str = String(val).replace(/,/g, '').trim();
+  const n = parseFloat(str);
+  return isNaN(n) ? 0 : n;
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    CNET / NOBIR POS Excel format detector + parser
    Columns: Article Code | Article Name | Quantity | Avg Amount | Total Amount
    The sheet has category & sub-category header rows mixed in — we skip those.
+   Extracts 5 critical footer metrics: Sub Total, Add Charge, Discount, Total Tax, Grand Total.
 ───────────────────────────────────────────────────────────────────────── */
 function parseCnetPosSheet(rawRows) {
   // Find the header row: must contain both "Article Code" and "Article Name"
@@ -73,9 +83,9 @@ function parseCnetPosSheet(rawRows) {
   for (const row of dataRows) {
     const rawCode = String(row[colMap.code] || '').trim();
     const name = String(row[colMap.name] || '').trim();
-    const qty = parseFloat(row[colMap.qty] || 0) || 0;
-    const avgAmt = parseFloat(row[colMap.avgAmt] || 0) || 0;
-    const totalAmt = parseFloat(row[colMap.totalAmt] || 0) || 0;
+    const qty = parseSafeNum(row[colMap.qty]);
+    let avgAmt = parseSafeNum(row[colMap.avgAmt]);
+    let totalAmt = parseSafeNum(row[colMap.totalAmt]);
 
     // ── STRICT PRODUCT CODE REQUIRED ───────────────────────────────
     // Category subtotal rows (BEVERAGES, SOFT DRINKS, LUNCH & DINNER, etc.)
@@ -87,15 +97,83 @@ function parseCnetPosSheet(rawRows) {
     const code = rawCode.replace(/-+$/, ''); // strip trailing dashes (e.g. "p-00107-" → "p-00107")
 
     // Skip summary / footer rows regardless
-    if (/^(sub[\s-]?total|grand[\s-]?total|total[\s-]?tax|add[\s-]?charge|discount|erp\s|page\s|count:)/i.test(name)) continue;
+    if (/^(sub[\s_-]?total|grand[\s_-]?total|total[\s_-]?tax|tax[\s_-]?total|\bvat\b|add[\s_.-]?charge|service[\s_-]?charge|\bdiscount\b|erp\s|page\s|count:)/i.test(name)) continue;
 
     // Must have qty > 0 to be a real sold line
     if (qty <= 0) continue;
 
+    if (totalAmt <= 0 && avgAmt > 0 && qty > 0) {
+      totalAmt = avgAmt * qty;
+    } else if (avgAmt <= 0 && totalAmt > 0 && qty > 0) {
+      avgAmt = totalAmt / qty;
+    }
+
     parsed.push({ code, name, qty, avgAmt, totalAmt });
   }
 
-  return { rows: parsed, colMap };
+  // ── FOOTER SCANNER: Extract Sub Total, Add Charge, Discount, Total Tax, Grand Total ──
+  let foundGrandTotal = null;
+  let foundSubTotal = null;
+  let foundAddCharge = null;
+  let foundDiscount = null;
+  let foundTotalTax = null;
+
+  const extractRowNumber = (row) => {
+    // 1. Try totalAmt mapped column
+    if (colMap.totalAmt && row[colMap.totalAmt] !== undefined && row[colMap.totalAmt] !== '') {
+      const n = parseSafeNum(row[colMap.totalAmt]);
+      if (n !== 0) return n;
+    }
+    // 2. Scan row values right-to-left
+    const vals = Object.values(row);
+    for (let idx = vals.length - 1; idx >= 0; idx--) {
+      const n = parseSafeNum(vals[idx]);
+      if (n !== 0) return n;
+    }
+    return 0;
+  };
+
+  for (const row of rawRows) {
+    const rowStrings = Object.values(row).map(v => String(v || '').trim());
+    const rowText = rowStrings.join(' ');
+
+    if (/grand[\s_-]*total/i.test(rowText)) {
+      const val = extractRowNumber(row);
+      if (val !== 0) foundGrandTotal = val;
+    } else if (/sub[\s_-]*total/i.test(rowText)) {
+      const val = extractRowNumber(row);
+      if (val !== 0) foundSubTotal = val;
+    } else if (/add[\s_.-]*charge|service[\s_-]*charge/i.test(rowText)) {
+      const val = extractRowNumber(row);
+      if (val !== 0) foundAddCharge = val;
+    } else if (/\bdiscount\b/i.test(rowText)) {
+      const val = extractRowNumber(row);
+      if (val !== 0) foundDiscount = val;
+    } else if (/total[\s_-]*tax|tax[\s_-]*total|\bvat\b/i.test(rowText)) {
+      const val = extractRowNumber(row);
+      if (val !== 0) foundTotalTax = val;
+    }
+  }
+
+  const itemsTotalRevenue = parsed.reduce((sum, r) => sum + r.totalAmt, 0);
+  const subTotal = foundSubTotal !== null ? foundSubTotal : Math.round(itemsTotalRevenue * 100) / 100;
+  const addCharge = foundAddCharge !== null ? foundAddCharge : 0;
+  const discount = foundDiscount !== null ? foundDiscount : 0;
+  const totalTax = foundTotalTax !== null ? foundTotalTax : 0;
+  const computedGrand = Math.round((subTotal + addCharge - discount + totalTax) * 100) / 100;
+  const grandTotal = foundGrandTotal !== null ? foundGrandTotal : computedGrand;
+
+  return {
+    rows: parsed,
+    colMap,
+    financialSummary: {
+      subTotal,
+      addCharge,
+      discount,
+      totalTax,
+      grandTotal,
+    },
+  };
 }
 
 export default function SalesImport() {
@@ -228,12 +306,26 @@ export default function SalesImport() {
     }
 
     setManualLoading(true); setManualError('');
+    const sumRev = salesData.reduce((s, i) => s + (i.revenue || 0), 0);
+    const fin = {
+      subTotal: sumRev,
+      addCharge: 0,
+      discount: 0,
+      totalTax: 0,
+      grandTotal: sumRev,
+    };
     try {
       const res = await api.post('/transactions/import-sales', {
         sales: salesData,
         notes: `Manual Sales Entry${manualRef ? ' — ' + manualRef : ''}`,
         reference: manualRef || `Manual Entry — ${new Date().toLocaleDateString()}`,
         saleDate: manualDate,
+        financialSummary: fin,
+        subTotal: fin.subTotal,
+        addCharge: fin.addCharge,
+        discount: fin.discount,
+        totalTax: fin.totalTax,
+        grandTotal: fin.grandTotal,
       });
       setManualOpen(false);
       setResult({ success: true, data: res.data });
@@ -295,12 +387,26 @@ export default function SalesImport() {
       unitPrice: r.avgAmt,     // Avg Amount   = avg selling price per unit (incl. tax)
     })).filter(s => s.productCode || s.productName);
 
+    const fin = parsed.financialSummary || {
+      subTotal: parsed.rows.reduce((s, r) => s + r.totalAmt, 0),
+      addCharge: 0,
+      discount: 0,
+      totalTax: 0,
+      grandTotal: parsed.rows.reduce((s, r) => s + r.totalAmt, 0),
+    };
+
     setLoading(true); setResult(null);
     try {
       const res = await api.post('/transactions/import-sales', {
         sales: salesData,
         notes: 'Imported via POS Sales Report',
         reference: `POS Import — ${new Date().toLocaleDateString()}`,
+        financialSummary: fin,
+        subTotal: fin.subTotal,
+        addCharge: fin.addCharge,
+        discount: fin.discount,
+        totalTax: fin.totalTax,
+        grandTotal: fin.grandTotal,
       });
       setResult({ success: true, data: res.data });
       setFileData(null); setParsed(null);
@@ -321,11 +427,20 @@ export default function SalesImport() {
     const salesData = fileData.map(row => ({
       productName: productCol ? String(row[productCol] || '').trim() : '',
       productCode: productCodeCol ? String(row[productCodeCol] || '').trim() : '',
-      quantity: qtyCol ? (Number(row[qtyCol]) || 1) : 1,
-      revenue: revenueCol ? (Number(row[revenueCol]) || 0) : 0,
-      unitPrice: revenueCol ? (Number(row[revenueCol]) || 0) : 0,
+      quantity: qtyCol ? (parseSafeNum(row[qtyCol]) || 1) : 1,
+      revenue: revenueCol ? (parseSafeNum(row[revenueCol]) || 0) : 0,
+      unitPrice: revenueCol ? (parseSafeNum(row[revenueCol]) || 0) : 0,
       saleDate: dateCol ? row[dateCol] : null,
     })).filter(s => s.productName || s.productCode);
+
+    const sumRev = salesData.reduce((s, i) => s + (i.revenue || 0), 0);
+    const fin = {
+      subTotal: sumRev,
+      addCharge: 0,
+      discount: 0,
+      totalTax: 0,
+      grandTotal: sumRev,
+    };
 
     setLoading(true); setResult(null);
     try {
@@ -333,6 +448,12 @@ export default function SalesImport() {
         sales: salesData,
         notes: 'Imported via POS/Excel Report',
         reference: `POS Import — ${new Date().toLocaleDateString()}`,
+        financialSummary: fin,
+        subTotal: fin.subTotal,
+        addCharge: fin.addCharge,
+        discount: fin.discount,
+        totalTax: fin.totalTax,
+        grandTotal: fin.grandTotal,
       });
       setResult({ success: true, data: res.data });
       setFileData(null);
@@ -353,10 +474,10 @@ export default function SalesImport() {
       'Product Name': item.productName,
       'Category': item.category || 'General',
       'Quantity Sold': item.quantitySold,
-      'Unit Price (ETB)': item.sellingPrice.toFixed(2),
-      'Total Revenue (ETB)': item.revenue.toFixed(2),
-      'COGS (ETB)': item.cogs.toFixed(2),
-      'Gross Profit (ETB)': item.grossProfit.toFixed(2),
+      'Unit Price (ETB)': Number(item.sellingPrice || 0).toFixed(2),
+      'Total Revenue (ETB)': Number(item.revenue || 0).toFixed(2),
+      'COGS (ETB)': Number(item.cogs || 0).toFixed(2),
+      'Gross Profit (ETB)': Number(item.grossProfit || 0).toFixed(2),
       'Match Status': item.matchStatus === 'recipe_deducted' ? 'Recipe Deducted' :
         item.matchStatus === 'direct_material' ? 'Direct Stock Deducted' :
           item.matchStatus === 'no_recipe' ? 'Sold (No Recipe)' : 'Unmatched',
@@ -364,6 +485,99 @@ export default function SalesImport() {
         ? item.ingredientsUsed.map(i => `${i.materialName} (${i.quantityUsed} ${i.unit})`).join(', ')
         : 'None',
     }));
+
+    const subTotal = result.data.summary?.subTotal || result.data.summary?.totalRevenue || 0;
+    const addCharge = result.data.summary?.addCharge || 0;
+    const discount = result.data.summary?.discount || 0;
+    const totalTax = result.data.summary?.totalTax || 0;
+    const grandTotal = result.data.summary?.grandTotal || (subTotal + addCharge - discount + totalTax);
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': '── FINANCIAL SUMMARY ──',
+      'Category': '',
+      'Quantity Sold': '',
+      'Unit Price (ETB)': '',
+      'Total Revenue (ETB)': '',
+      'COGS (ETB)': '',
+      'Gross Profit (ETB)': '',
+      'Match Status': '',
+      'Ingredients Deducted': '',
+    });
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': 'Sub Total (Line Items)',
+      'Category': '',
+      'Quantity Sold': '',
+      'Unit Price (ETB)': '',
+      'Total Revenue (ETB)': Number(subTotal).toFixed(2),
+      'COGS (ETB)': '',
+      'Gross Profit (ETB)': '',
+      'Match Status': '',
+      'Ingredients Deducted': '',
+    });
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': '+ Add Charge (Service Charge)',
+      'Category': '',
+      'Quantity Sold': '',
+      'Unit Price (ETB)': '',
+      'Total Revenue (ETB)': Number(addCharge).toFixed(2),
+      'COGS (ETB)': '',
+      'Gross Profit (ETB)': '',
+      'Match Status': '',
+      'Ingredients Deducted': '',
+    });
+
+    if (discount > 0) {
+      exportRows.push({
+        '#': '',
+        'Product Code': '',
+        'Product Name': '- Discount',
+        'Category': '',
+        'Quantity Sold': '',
+        'Unit Price (ETB)': '',
+        'Total Revenue (ETB)': (-Number(discount)).toFixed(2),
+        'COGS (ETB)': '',
+        'Gross Profit (ETB)': '',
+        'Match Status': '',
+        'Ingredients Deducted': '',
+      });
+    }
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': '+ Total Tax (VAT)',
+      'Category': '',
+      'Quantity Sold': '',
+      'Unit Price (ETB)': '',
+      'Total Revenue (ETB)': Number(totalTax).toFixed(2),
+      'COGS (ETB)': '',
+      'Gross Profit (ETB)': '',
+      'Match Status': '',
+      'Ingredients Deducted': '',
+    });
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': 'GRAND TOTAL',
+      'Category': '',
+      'Quantity Sold': '',
+      'Unit Price (ETB)': '',
+      'Total Revenue (ETB)': Number(grandTotal).toFixed(2),
+      'COGS (ETB)': Number(result.data.summary?.totalCOGS || 0).toFixed(2),
+      'Gross Profit (ETB)': Number(result.data.summary?.grossProfit || 0).toFixed(2),
+      'Match Status': '',
+      'Ingredients Deducted': '',
+    });
+
     const ws = XLSX.utils.json_to_sheet(exportRows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sold POS Products');
@@ -604,15 +818,72 @@ export default function SalesImport() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-ink-50 font-bold text-xs border-t border-ink-200">
-                  <tr>
-                    <td colSpan={3} className="px-3 py-2 text-ink-700 font-bold">Total ({parsed.rows.length} items)</td>
+                <tfoot className="bg-ink-50 text-xs border-t-2 border-ink-200">
+                  {/* Row 1: Line Items Total Count & Sub Total */}
+                  <tr className="border-b border-ink-200/80 bg-ink-100/50 font-bold">
+                    <td colSpan={3} className="px-3 py-2 text-ink-800">Total ({parsed.rows.length} items)</td>
                     <td className="px-3 py-2 text-right tabular text-ink-900">
                       {parsed.rows.reduce((s, r) => s + r.qty, 0).toLocaleString()}
                     </td>
                     <td className="px-3 py-2 text-right text-ink-400">—</td>
                     <td className="px-3 py-2 text-right tabular text-blue-900">
-                      ETB {parsed.rows.reduce((s, r) => s + r.totalAmt, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      ETB {fmt(parsed.rows.reduce((s, r) => s + r.totalAmt, 0))}
+                    </td>
+                  </tr>
+
+                  {/* Row 2: Sub Total */}
+                  <tr className="border-b border-ink-100/60 text-ink-700">
+                    <td colSpan={5} className="px-3 py-1.5 text-right font-medium text-ink-600">
+                      Sub Total (Line Items):
+                    </td>
+                    <td className="px-3 py-1.5 text-right tabular font-semibold text-ink-900">
+                      ETB {fmt(parsed.financialSummary?.subTotal || parsed.rows.reduce((s, r) => s + r.totalAmt, 0))}
+                    </td>
+                  </tr>
+
+                  {/* Row 3: + Add Charge (Service Charge) */}
+                  {(parsed.financialSummary?.addCharge > 0 || parsed.financialSummary?.addCharge !== undefined) && (
+                    <tr className="border-b border-ink-100/60 text-ink-700">
+                      <td colSpan={5} className="px-3 py-1.5 text-right font-medium text-emerald-800">
+                        + Add Charge (Service Charge):
+                      </td>
+                      <td className="px-3 py-1.5 text-right tabular font-semibold text-emerald-700">
+                        ETB {fmt(parsed.financialSummary?.addCharge || 0)}
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Row 4: - Discount */}
+                  {(parsed.financialSummary?.discount > 0) && (
+                    <tr className="border-b border-ink-100/60 text-ink-700">
+                      <td colSpan={5} className="px-3 py-1.5 text-right font-medium text-red-700">
+                        - Discount:
+                      </td>
+                      <td className="px-3 py-1.5 text-right tabular font-semibold text-red-600">
+                        ETB {fmt(parsed.financialSummary?.discount || 0)}
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Row 5: + Total Tax (VAT) */}
+                  {(parsed.financialSummary?.totalTax > 0 || parsed.financialSummary?.totalTax !== undefined) && (
+                    <tr className="border-b border-ink-100/60 text-ink-700">
+                      <td colSpan={5} className="px-3 py-1.5 text-right font-medium text-purple-800">
+                        + Total Tax (VAT):
+                      </td>
+                      <td className="px-3 py-1.5 text-right tabular font-semibold text-purple-700">
+                        ETB {fmt(parsed.financialSummary?.totalTax || 0)}
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Row 6: Grand Total (bold / highlighted) */}
+                  <tr className="bg-blue-50/80 text-blue-950 font-bold border-t border-blue-200">
+                    <td colSpan={5} className="px-3 py-2 text-right uppercase tracking-wider text-xs">
+                      Grand Total:
+                    </td>
+                    <td className="px-3 py-2 text-right tabular text-blue-900 font-extrabold text-sm">
+                      ETB {fmt(parsed.financialSummary?.grandTotal || parsed.financialSummary?.subTotal || parsed.rows.reduce((s, r) => s + r.totalAmt, 0))}
                     </td>
                   </tr>
                 </tfoot>
@@ -744,19 +1015,65 @@ export default function SalesImport() {
 
             {/* KPI cards */}
             {result.data.summary && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { label: 'Total POS Revenue', val: `ETB ${fmt(result.data.summary.totalRevenue)}`, sub: `${result.data.summary.totalSoldProducts || result.data.items?.length || 0} items sold`, cls: 'text-blue-700' },
-                  { label: 'Total COGS', val: `ETB ${fmt(result.data.summary.totalCOGS)}`, sub: 'Deducted from stock', cls: 'text-orange-700' },
-                  { label: 'Gross Profit', val: `ETB ${fmt(result.data.summary.grossProfit)}`, sub: 'Revenue − COGS', cls: result.data.summary.grossProfit >= 0 ? 'text-emerald-700' : 'text-red-700' },
-                  { label: 'Gross Profit Margin', val: result.data.summary.profitMargin, sub: 'Efficiency percentage', cls: 'text-violet-700' },
-                ].map(({ label, val, sub, cls }) => (
-                  <div key={label} className="rounded-xl border border-ink-100 bg-white p-4 shadow-xs">
-                    <p className="text-xs font-medium text-ink-500">{label}</p>
-                    <p className={`tabular text-xl font-bold mt-1 ${cls}`}>{val}</p>
-                    <p className="text-[11px] text-ink-400 mt-0.5">{sub}</p>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: 'Total POS Revenue', val: `ETB ${fmt(result.data.summary.totalRevenue)}`, sub: `${result.data.summary.totalSoldProducts || result.data.items?.length || 0} items sold`, cls: 'text-blue-700' },
+                    { label: 'Total COGS', val: `ETB ${fmt(result.data.summary.totalCOGS)}`, sub: 'Deducted from stock', cls: 'text-orange-700' },
+                    { label: 'Gross Profit', val: `ETB ${fmt(result.data.summary.grossProfit)}`, sub: 'Revenue − COGS', cls: result.data.summary.grossProfit >= 0 ? 'text-emerald-700' : 'text-red-700' },
+                    { label: 'Gross Profit Margin', val: result.data.summary.profitMargin, sub: 'Efficiency percentage', cls: 'text-violet-700' },
+                  ].map(({ label, val, sub, cls }) => (
+                    <div key={label} className="rounded-xl border border-ink-100 bg-white p-4 shadow-xs">
+                      <p className="text-xs font-medium text-ink-500">{label}</p>
+                      <p className={`tabular text-xl font-bold mt-1 ${cls}`}>{val}</p>
+                      <p className="text-[11px] text-ink-400 mt-0.5">{sub}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Dedicated 5-Card Financial Statement Block */}
+                <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-sky-50/60 p-4 shadow-xs">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+                      📑 Complete POS Financial Statement
+                    </span>
+                    <span className="text-xs font-extrabold text-blue-900 bg-blue-100/90 px-3 py-1 rounded-full border border-blue-300">
+                      Receipt Grand Total: ETB {fmt(result.data.summary.grandTotal || result.data.summary.totalRevenue)}
+                    </span>
                   </div>
-                ))}
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 text-xs">
+                    <div className="bg-white/90 p-3 rounded-xl border border-blue-100 shadow-xs">
+                      <p className="text-[10px] text-ink-500 font-medium">Sub Total (Lines)</p>
+                      <p className="font-bold text-ink-900 font-mono text-sm mt-0.5">
+                        ETB {fmt(result.data.summary.subTotal || result.data.summary.totalRevenue)}
+                      </p>
+                    </div>
+                    <div className="bg-white/90 p-3 rounded-xl border border-emerald-100 shadow-xs">
+                      <p className="text-[10px] text-emerald-700 font-medium">+ Add Charge (Service)</p>
+                      <p className="font-bold text-emerald-700 font-mono text-sm mt-0.5">
+                        ETB {fmt(result.data.summary.addCharge || 0)}
+                      </p>
+                    </div>
+                    <div className="bg-white/90 p-3 rounded-xl border border-red-100 shadow-xs">
+                      <p className="text-[10px] text-red-600 font-medium">- Discount</p>
+                      <p className="font-bold text-red-600 font-mono text-sm mt-0.5">
+                        ETB {fmt(result.data.summary.discount || 0)}
+                      </p>
+                    </div>
+                    <div className="bg-white/90 p-3 rounded-xl border border-purple-100 shadow-xs">
+                      <p className="text-[10px] text-purple-700 font-medium">+ Total Tax (VAT)</p>
+                      <p className="font-bold text-purple-700 font-mono text-sm mt-0.5">
+                        ETB {fmt(result.data.summary.totalTax || 0)}
+                      </p>
+                    </div>
+                    <div className="bg-blue-600 text-white p-3 rounded-xl shadow-xs">
+                      <p className="text-[10px] text-blue-100 font-medium">Grand Total</p>
+                      <p className="font-extrabold text-white font-mono text-sm mt-0.5">
+                        ETB {fmt(result.data.summary.grandTotal || result.data.summary.totalRevenue)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

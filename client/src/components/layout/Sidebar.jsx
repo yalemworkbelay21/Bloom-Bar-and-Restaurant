@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import BloomAfricaLogo from '../ui/BloomAfricaLogo';
 import { SIDEBAR_THEMES } from '../../config/sidebarThemes';
 
@@ -294,6 +295,7 @@ const Sidebar = ({
   onExpand,
 }) => {
   const { user, canSeeNav, sidebarTheme, useMaterialIcons, isModuleLicensed } = useAuth();
+  const { t } = useLanguage();
   const theme = SIDEBAR_THEMES[sidebarTheme] || SIDEBAR_THEMES.navy;
   const location = useLocation();
   const navigate = useNavigate();
@@ -380,26 +382,26 @@ const Sidebar = ({
 
   // Submenu items
   const subsystemItems = [
-    canSeeNav('captainOrder') && { to: '/captain-order', label: 'Captain Order', icon: ReceiptLongRoundedIcon },
+    canSeeNav('captainOrder') && { to: '/captain-order', label: t('common.captainOrder', 'Captain Order'), icon: ReceiptLongRoundedIcon },
     canSeeNav('cashSales') && { to: '/cash-sales', label: 'Cash Sales', icon: PaidRoundedIcon },
-    canSeeNav('pos') && { to: '/pos', label: 'POS Ordering', icon: PointOfSaleRoundedIcon },
-    (isModuleLicensed('digitalMenu') || user?.role === 'dev') && { to: '/menu', label: 'Digital Menu (QR)', icon: QrCode2RoundedIcon, external: true },
+    canSeeNav('pos') && { to: '/pos', label: t('common.pos', 'POS Ordering'), icon: PointOfSaleRoundedIcon },
+    (isModuleLicensed('digitalMenu') || user?.role === 'dev') && { to: '/menu', label: t('common.digitalMenu', 'Digital Menu (QR)'), icon: QrCode2RoundedIcon, external: true },
   ].filter(Boolean);
 
   const inventoryItems = [
-    canSeeNav('rawMaterials') && { to: '/materials', label: 'Raw Materials', icon: WidgetsRoundedIcon },
-    canSeeNav('products') && { to: '/products', label: 'Products & Recipes', icon: RestaurantMenuRoundedIcon },
+    canSeeNav('rawMaterials') && { to: '/materials', label: t('common.rawMaterials', 'Raw Materials'), icon: WidgetsRoundedIcon },
+    canSeeNav('products') && { to: '/products', label: t('common.products', 'Products & Recipes'), icon: RestaurantMenuRoundedIcon },
     canSeeNav('suppliers') && { to: '/suppliers', label: 'Suppliers Directory', icon: LocalShippingRoundedIcon },
     canSeeNav('consumption') && { to: '/consumption', label: 'Consumption', icon: CoffeeRoundedIcon },
   ].filter(Boolean);
 
   const financeItems = [
     canSeeNav('expenses') && { to: '/expenses', label: 'Overhead Expenses', icon: ReceiptLongRoundedIcon },
-    canSeeNav('analytics') && { to: '/analytics', label: 'Analytics & P&L', icon: TrendingUpRoundedIcon },
+    canSeeNav('analytics') && { to: '/analytics', label: t('common.reports', 'Analytics & P&L'), icon: TrendingUpRoundedIcon },
   ].filter(Boolean);
 
   const staffItems = [
-    { to: '/users', label: 'Staff Accounts', icon: PeopleAltRoundedIcon },
+    { to: '/users', label: t('common.users', 'Staff Accounts'), icon: PeopleAltRoundedIcon },
     { to: '/employees', label: 'Employees Directory', icon: ManageAccountsRoundedIcon },
   ];
 
@@ -510,7 +512,7 @@ const Sidebar = ({
             >
               <MenuLink
                 to="/"
-                label="Dashboard"
+                label={t('common.dashboard', 'Dashboard')}
                 subtitle="Overview & metrics"
                 icon={DashboardRoundedIcon}
                 iconGradient="linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)"

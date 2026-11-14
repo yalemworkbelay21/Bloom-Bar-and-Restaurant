@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import api from '../api/axios';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -131,6 +132,108 @@ export default function Analytics() {
     }
   };
 
+  /* ── Export batch lines with 5-metric financial summary footer ── */
+  const handleExportBatchLines = (record) => {
+    if (!record || !record.lines?.length) return;
+    const exportRows = record.lines.map((item, idx) => ({
+      '#': idx + 1,
+      'Product Code': item.productCode || '—',
+      'Product Name': item.productName,
+      'Quantity Sold': item.quantitySold,
+      'Selling Price (ETB)': Number(item.sellingPrice || 0).toFixed(2),
+      'Revenue (ETB)': Number(item.revenue || 0).toFixed(2),
+      'COGS (ETB)': Number(item.cogs || 0).toFixed(2),
+      'Gross Profit (ETB)': Number(item.grossProfit || 0).toFixed(2),
+      'Match Status': item.matchStatus || 'matched',
+    }));
+
+    const subTotal = record.subTotal || record.totalRevenue || 0;
+    const addCharge = record.addCharge || 0;
+    const discount = record.discount || 0;
+    const totalTax = record.totalTax || 0;
+    const grandTotal = record.grandTotal || (subTotal + addCharge - discount + totalTax);
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': '── FINANCIAL SUMMARY ──',
+      'Quantity Sold': '',
+      'Selling Price (ETB)': '',
+      'Revenue (ETB)': '',
+      'COGS (ETB)': '',
+      'Gross Profit (ETB)': '',
+      'Match Status': '',
+    });
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': 'Sub Total (Line Items)',
+      'Quantity Sold': '',
+      'Selling Price (ETB)': '',
+      'Revenue (ETB)': Number(subTotal).toFixed(2),
+      'COGS (ETB)': '',
+      'Gross Profit (ETB)': '',
+      'Match Status': '',
+    });
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': '+ Add Charge (Service Charge)',
+      'Quantity Sold': '',
+      'Selling Price (ETB)': '',
+      'Revenue (ETB)': Number(addCharge).toFixed(2),
+      'COGS (ETB)': '',
+      'Gross Profit (ETB)': '',
+      'Match Status': '',
+    });
+
+    if (discount > 0) {
+      exportRows.push({
+        '#': '',
+        'Product Code': '',
+        'Product Name': '- Discount',
+        'Quantity Sold': '',
+        'Selling Price (ETB)': '',
+        'Revenue (ETB)': (-Number(discount)).toFixed(2),
+        'COGS (ETB)': '',
+        'Gross Profit (ETB)': '',
+        'Match Status': '',
+      });
+    }
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': '+ Total Tax (VAT)',
+      'Quantity Sold': '',
+      'Selling Price (ETB)': '',
+      'Revenue (ETB)': Number(totalTax).toFixed(2),
+      'COGS (ETB)': '',
+      'Gross Profit (ETB)': '',
+      'Match Status': '',
+    });
+
+    exportRows.push({
+      '#': '',
+      'Product Code': '',
+      'Product Name': 'GRAND TOTAL',
+      'Quantity Sold': '',
+      'Selling Price (ETB)': '',
+      'Revenue (ETB)': Number(grandTotal).toFixed(2),
+      'COGS (ETB)': Number(record.totalCOGS || 0).toFixed(2),
+      'Gross Profit (ETB)': Number(record.grossProfit || 0).toFixed(2),
+      'Match Status': '',
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Batch Details');
+    const safeRef = (record.reference || 'batch').replace(/[^a-zA-Z0-9_-]/g, '_');
+    XLSX.writeFile(wb, `${safeRef}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   const fmt = (n) => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const pct = (n) => `${(Number(n) || 0).toFixed(1)}%`;
 
@@ -169,11 +272,18 @@ export default function Analytics() {
     }
     if (activeTab === 'records') {
       return recordsData.map(r => ({
-        'Date':           new Date(r.importedAt || r.createdAt).toLocaleDateString(),
-        'Product':        r.productName || '—',
-        'Units Sold':     r.unitsSold ?? 0,
-        'Revenue (ETB)':  Number(r.revenue || 0).toFixed(2),
-        'Imported By':    r.importedBy?.name || '—',
+        'Date':                 new Date(r.saleDate || r.importDate || r.createdAt).toLocaleDateString(),
+        'Reference / Batch':    r.reference || 'POS Batch',
+        'Lines Count':          r.lines?.length || 0,
+        'Sub Total (ETB)':      Number(r.subTotal || r.totalRevenue || 0).toFixed(2),
+        'Add Charge (ETB)':     Number(r.addCharge || 0).toFixed(2),
+        'Discount (ETB)':       Number(r.discount || 0).toFixed(2),
+        'Total Tax (ETB)':      Number(r.totalTax || 0).toFixed(2),
+        'Grand Total (ETB)':    Number(r.grandTotal || r.totalRevenue || 0).toFixed(2),
+        'COGS (ETB)':           Number(r.totalCOGS || 0).toFixed(2),
+        'Gross Profit (ETB)':   Number(r.grossProfit || 0).toFixed(2),
+        'Margin %':             Number(r.profitMargin || 0).toFixed(1) + '%',
+        'Imported By':          r.importedBy?.name || '—',
       }));
     }
     return [];
@@ -1324,8 +1434,15 @@ export default function Analytics() {
                       <p className="text-[10px] text-ink-400">{rec.notes}</p>
                     </td>
                     <td className="py-3 px-3 text-right font-medium">{rec.lines?.length || 0} lines</td>
-                    <td className="py-3 px-3 text-right font-mono font-semibold text-blue-700">
-                      ETB {fmt(rec.totalRevenue)}
+                    <td className="py-3 px-3 text-right font-mono">
+                      <p className="font-bold text-blue-900 text-xs">
+                        ETB {fmt(rec.grandTotal || rec.totalRevenue)}
+                      </p>
+                      {(rec.subTotal > 0 || rec.addCharge > 0 || rec.totalTax > 0) && (
+                        <p className="text-[10px] text-ink-500 font-normal">
+                          Sub: ETB {fmt(rec.subTotal || rec.totalRevenue)}
+                        </p>
+                      )}
                     </td>
                     <td className="py-3 px-3 text-right font-mono text-orange-600">
                       ETB {fmt(rec.totalCOGS)}
@@ -1379,13 +1496,72 @@ export default function Analytics() {
           onClose={() => setSelectedRecord(null)}
         >
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            {/* Top Toolbar */}
+            <div className="flex items-center justify-between pb-1 border-b border-ink-100">
+              <span className="text-xs font-semibold text-ink-500">
+                {selectedRecord.lines?.length || 0} product line(s) in this batch
+              </span>
+              <button
+                type="button"
+                onClick={() => handleExportBatchLines(selectedRecord)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 px-3 py-1.5 text-xs font-bold hover:bg-emerald-100 transition shadow-xs"
+                title="Export this batch to Excel with Financial Summary footer"
+              >
+                <Download size={13} /> Export Batch (Excel)
+              </button>
+            </div>
+
+            {/* Dedicated 5-Card Financial Statement Block */}
+            <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-sky-50/60 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+                  📑 Financial Breakdown Statement
+                </span>
+                <span className="text-[11px] font-extrabold text-blue-900 bg-blue-100/90 px-2.5 py-0.5 rounded-full border border-blue-300">
+                  Grand Total: ETB {fmt(selectedRecord.grandTotal || selectedRecord.totalRevenue)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
+                <div className="bg-white/95 p-2.5 rounded-lg border border-blue-100 shadow-xs">
+                  <p className="text-[10px] text-ink-500 font-medium">Sub Total</p>
+                  <p className="font-bold text-ink-900 font-mono mt-0.5">
+                    ETB {fmt(selectedRecord.subTotal || selectedRecord.totalRevenue)}
+                  </p>
+                </div>
+                <div className="bg-white/95 p-2.5 rounded-lg border border-emerald-100 shadow-xs">
+                  <p className="text-[10px] text-emerald-700 font-medium">+ Add Charge</p>
+                  <p className="font-bold text-emerald-700 font-mono mt-0.5">
+                    ETB {fmt(selectedRecord.addCharge || 0)}
+                  </p>
+                </div>
+                <div className="bg-white/95 p-2.5 rounded-lg border border-red-100 shadow-xs">
+                  <p className="text-[10px] text-red-600 font-medium">- Discount</p>
+                  <p className="font-bold text-red-600 font-mono mt-0.5">
+                    ETB {fmt(selectedRecord.discount || 0)}
+                  </p>
+                </div>
+                <div className="bg-white/95 p-2.5 rounded-lg border border-purple-100 shadow-xs">
+                  <p className="text-[10px] text-purple-700 font-medium">+ Total Tax (VAT)</p>
+                  <p className="font-bold text-purple-700 font-mono mt-0.5">
+                    ETB {fmt(selectedRecord.totalTax || 0)}
+                  </p>
+                </div>
+                <div className="bg-blue-600 text-white p-2.5 rounded-lg shadow-xs">
+                  <p className="text-[10px] text-blue-100 font-medium">Grand Total</p>
+                  <p className="font-extrabold text-white font-mono mt-0.5">
+                    ETB {fmt(selectedRecord.grandTotal || selectedRecord.totalRevenue)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4 bg-ink-50 p-3 rounded-xl">
               <div>
                 <p className="text-ink-400">Sale Date:</p>
                 <p className="font-bold text-ink-900">{new Date(selectedRecord.saleDate).toLocaleDateString()}</p>
               </div>
               <div>
-                <p className="text-ink-400">Total Revenue:</p>
+                <p className="text-ink-400">Line Items Rev:</p>
                 <p className="font-bold text-blue-700">ETB {fmt(selectedRecord.totalRevenue)}</p>
               </div>
               <div>

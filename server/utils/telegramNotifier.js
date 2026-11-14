@@ -1085,6 +1085,42 @@ function notifyExpenseDeleted(expense, user) {
   );
 }
 
+// ── SALES REPORT IMPORT ───────────────────────────────────────────
+
+function notifySalesImported(record, summary, user) {
+  const ref = record?.reference || `POS Import — ${new Date().toLocaleDateString()}`;
+  const subTotal = Number(summary?.subTotal ?? record?.subTotal ?? summary?.totalRevenue ?? 0);
+  const addCharge = Number(summary?.addCharge ?? record?.addCharge ?? 0);
+  const discount = Number(summary?.discount ?? record?.discount ?? 0);
+  const totalTax = Number(summary?.totalTax ?? record?.totalTax ?? 0);
+  const grandTotal = Number(summary?.grandTotal ?? record?.grandTotal ?? (subTotal + addCharge - discount + totalTax));
+  const itemsCount = summary?.totalSoldProducts || record?.lines?.length || 0;
+  const deductionsCount = summary?.recipeDeductionsCount || 0;
+
+  const financialLines = [
+    `💵 <b>Sub Total:</b> ${etb(subTotal)}`,
+    addCharge > 0 ? `➕ <b>Add Charge:</b> ${etb(addCharge)}` : null,
+    discount > 0 ? `🏷️ <b>Discount:</b> -${etb(discount)}` : null,
+    totalTax > 0 ? `🏛️ <b>Total Tax (VAT):</b> ${etb(totalTax)}` : null,
+    `💰 <b>Grand Total:</b> ${etb(grandTotal)}`,
+  ].filter(Boolean).join('\n');
+
+  sendTelegram(
+    `🏨 <b>${HOTEL}</b>
+📥 <b>NEW SALES REPORT IMPORTED</b>
+
+📊 <b>Batch / Ref:</b> ${ref}
+━━━━━━━━━━━━━━━━━━━━
+📑 <b>FINANCIAL BREAKDOWN:</b>
+${financialLines}
+━━━━━━━━━━━━━━━━━━━━
+🧾 <b>Items Processed:</b> ${itemsCount} sold products
+${deductionsCount > 0 ? `🥗 <b>Recipe Deductions:</b> ${deductionsCount} items with stock updated\n` : ''}👤 <b>Imported By:</b> ${user?.name || 'Administrator'}
+🕐 <b>Date & Time:</b> ${now()}
+━━━━━━━━━━━━━━━━━━━━`
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────
 module.exports = {
   HOTEL,
@@ -1134,6 +1170,7 @@ module.exports = {
   notifyPasswordChanged,
   notifyExpenseCreated,
   notifyExpenseDeleted,
+  notifySalesImported,
   sendNotification: sendTelegram,
   sendTelegram,
   sendToOne,

@@ -102,12 +102,30 @@ async function computeDailySalesMetrics(startDate, endDate) {
   });
 
   // Process Imported Sales Records
+  let importedSubTotal = 0;
+  let importedAddCharge = 0;
+  let importedDiscount = 0;
+  let importedTotalTax = 0;
+  let importedGrandTotal = 0;
+
   importedSales.forEach((rec) => {
-    const rev = Number(rec.totalRevenue || 0);
-    totalSales += rev;
+    const sTotal = Number(rec.subTotal || rec.totalRevenue || 0);
+    const addChg = Number(rec.addCharge || 0);
+    const disc = Number(rec.discount || 0);
+    const tax = Number(rec.totalTax || 0);
+    const gTotal = Number(rec.grandTotal || (sTotal + addChg - disc + tax) || rec.totalRevenue || 0);
+    const effectiveRev = gTotal > 0 ? gTotal : sTotal;
+
+    importedSubTotal += sTotal;
+    importedAddCharge += addChg;
+    importedDiscount += disc;
+    importedTotalTax += tax;
+    importedGrandTotal += effectiveRev;
+
+    totalSales += effectiveRev;
     totalOrdersCount++;
     channelStats.imported.count++;
-    channelStats.imported.revenue += rev;
+    channelStats.imported.revenue += effectiveRev;
 
     (rec.lines || []).forEach((line) => {
       addCategoryItem('Imported Sales', line.quantitySold, line.revenue);
@@ -125,6 +143,13 @@ async function computeDailySalesMetrics(startDate, endDate) {
     topCategories,
     channelStats,
     paymentStats,
+    importedFinancials: {
+      subTotal: importedSubTotal,
+      addCharge: importedAddCharge,
+      discount: importedDiscount,
+      totalTax: importedTotalTax,
+      grandTotal: importedGrandTotal,
+    },
   };
 }
 
@@ -143,6 +168,27 @@ function formatDailyReportMessage(metrics, cafeName = 'Bloom Africa') {
     .map((c) => `  • <b>${c.name}:</b> ${formatBirr(c.revenue)} (${c.quantity} items)`)
     .join('\n');
 
+  let importedSection = '';
+  if (metrics.channelStats.imported.count > 0) {
+    const fin = metrics.importedFinancials || {};
+    importedSection = `  • 📁 <b>Imported POS Sales:</b> ${formatBirr(metrics.channelStats.imported.revenue)} (${metrics.channelStats.imported.count} batches)\n`;
+    if (fin.subTotal > 0) {
+      importedSection += `      💵 Sub Total: ${formatBirr(fin.subTotal)}\n`;
+    }
+    if (fin.addCharge > 0) {
+      importedSection += `      ➕ Add Charge: ${formatBirr(fin.addCharge)}\n`;
+    }
+    if (fin.discount > 0) {
+      importedSection += `      🏷️ Discount: -${formatBirr(fin.discount)}\n`;
+    }
+    if (fin.totalTax > 0) {
+      importedSection += `      🏛️ Tax (VAT): ${formatBirr(fin.totalTax)}\n`;
+    }
+    if (fin.grandTotal > 0 && Math.abs(fin.grandTotal - fin.subTotal) > 0.01) {
+      importedSection += `      💰 Grand Total: ${formatBirr(fin.grandTotal)}\n`;
+    }
+  }
+
   return (
     `🏨 <b>${cleanCafeName.toUpperCase()}</b>
 📊 <b>DAILY SALES DIGEST — ${metrics.dateString}</b>
@@ -156,7 +202,7 @@ ${categoryLines || '  • <i>No categorized items sold yet today.</i>'}
 📱 <b>BY ORDER CHANNEL:</b>
   • 🖥️ <b>Counter POS:</b> ${formatBirr(metrics.channelStats.pos.revenue)} (${metrics.channelStats.pos.count} orders)
   • 📱 <b>Customer QR Menu:</b> ${formatBirr(metrics.channelStats.qr.revenue)} (${metrics.channelStats.qr.count} orders)
-${metrics.channelStats.imported.count > 0 ? `  • 📁 <b>Imported Sales:</b> ${formatBirr(metrics.channelStats.imported.revenue)} (${metrics.channelStats.imported.count} orders)\n` : ''}━━━━━━━━━━━━━━━━━━━━
+${importedSection}━━━━━━━━━━━━━━━━━━━━
 💳 <b>PAYMENT METHODS:</b>
   • 💵 <b>Cash:</b> ${formatBirr(metrics.paymentStats.Cash)}
   • 📱 <b>Telebirr:</b> ${formatBirr(metrics.paymentStats.Telebirr)}

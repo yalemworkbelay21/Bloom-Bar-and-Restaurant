@@ -10,6 +10,7 @@ import {
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSessionTimeout } from '../../context/SessionTimeoutContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 // ─────────────────────────────────────────
 // HELP MODAL DATA
@@ -483,6 +484,7 @@ const NotificationBell = () => {
 const Topbar = ({ onMenuClick, onToggleCollapse, title }) => {
   const { user, logout, hasRole } = useAuth();
   const { timeoutMinutes, setTimeoutMinutes } = useSessionTimeout();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -555,6 +557,34 @@ const Topbar = ({ onMenuClick, onToggleCollapse, title }) => {
             <span className="text-[11px] font-medium text-slate-600">
               {timeoutMinutes === 0 ? 'Timeout: Off' : `Auto-Logout: ${timeoutMinutes}m`}
             </span>
+          </div>
+
+          {/* Language Switcher Pill */}
+          <div className="flex items-center rounded-full bg-slate-100 p-0.5 border border-slate-200 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setLanguage('en')}
+              className={`px-2 py-0.5 rounded-full text-[11px] font-black transition cursor-pointer ${
+                language === 'en'
+                  ? 'bg-white text-blue-700 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+              title="Switch to English"
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('am')}
+              className={`px-2 py-0.5 rounded-full text-[11px] font-black transition cursor-pointer ${
+                language === 'am'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+              title="ቀይር ወደ አማርኛ (Switch to Amharic)"
+            >
+              አማ
+            </button>
           </div>
 
           {/* Notification Bell */}
