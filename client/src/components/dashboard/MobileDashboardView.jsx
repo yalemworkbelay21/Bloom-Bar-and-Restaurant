@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import BloomAfricaLogo from '../ui/BloomAfricaLogo';
 
 // ── Material UI Icons ────────────────────────────────────────────────
@@ -40,18 +41,32 @@ const formatETB = (n) =>
 export default function MobileDashboardView({ data, user }) {
   const navigate = useNavigate();
   const { canSeeNav } = useAuth();
+  const { language, t } = useLanguage();
 
   // Dynamic Greeting based on current local hour
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return { text: 'Good Morning', emoji: '☀️' };
-    if (hour >= 12 && hour < 18) return { text: 'Good Afternoon', emoji: '🌤️' };
-    return { text: 'Good Evening', emoji: '🌙' };
+    if (hour >= 5 && hour < 12) {
+      return {
+        text: language === 'am' ? 'እንደምን አደሩ' : 'Good Morning',
+        emoji: '☀️',
+      };
+    }
+    if (hour >= 12 && hour < 18) {
+      return {
+        text: language === 'am' ? 'እንደምን ዋሉ' : 'Good Afternoon',
+        emoji: '☀️',
+      };
+    }
+    return {
+      text: language === 'am' ? 'እንደምን አመሹ' : 'Good Evening',
+      emoji: '🌙',
+    };
   };
   const greeting = getGreeting();
 
   // Current formatted date (e.g. Oct 21, 2026)
-  const todayFormatted = new Date().toLocaleDateString('en-US', {
+  const todayFormatted = new Date().toLocaleDateString(language === 'am' ? 'am-ET' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -196,7 +211,7 @@ export default function MobileDashboardView({ data, user }) {
             {greeting.text} <span>{greeting.emoji}</span>
           </h2>
           <p className="text-[11.5px] font-medium text-slate-500 leading-tight mt-0.5">
-            Manage your restaurant with ease
+            {language === 'am' ? 'ሬስቶራንትዎን በቀላሉ ያስተዳድሩ' : 'Manage your restaurant with ease'}
           </p>
         </div>
       </div>
@@ -215,7 +230,7 @@ export default function MobileDashboardView({ data, user }) {
                 <TrendingUpRoundedIcon sx={{ fontSize: 18 }} />
               </span>
               <span className="text-[13px] font-bold text-slate-800 flex items-center gap-0.5 group-hover:text-blue-600 transition-colors">
-                Today's Sales <ChevronRightRoundedIcon sx={{ fontSize: 16 }} />
+                {t('dashboard.todaySales', "Today's Sales")} <ChevronRightRoundedIcon sx={{ fontSize: 16 }} />
               </span>
             </Link>
 
@@ -240,10 +255,9 @@ export default function MobileDashboardView({ data, user }) {
               <div className="mt-1 flex items-center gap-1 text-[11.5px] font-bold text-emerald-600">
                 <ArrowUpwardRoundedIcon sx={{ fontSize: 13 }} />
                 <span>+12%</span>
-                <span className="font-medium text-slate-400 text-[10.5px]">vs. yesterday</span>
+                <span className="font-medium text-slate-400 text-[10.5px]">{t('dashboard.vsYesterday', 'vs. yesterday')}</span>
               </div>
             </div>
-
             {/* Green Sparkline Curve (Reference Image Graphic) */}
             <div className="w-24 h-11 shrink-0 pb-1">
               <svg viewBox="0 0 100 45" className="w-full h-full overflow-visible">
@@ -277,7 +291,7 @@ export default function MobileDashboardView({ data, user }) {
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm mb-2">
               <RestaurantMenuRoundedIcon sx={{ fontSize: 17 }} />
             </div>
-            <p className="text-[11px] font-bold text-slate-700 leading-tight">Food Sales</p>
+            <p className="text-[11px] font-bold text-slate-700 leading-tight">{t('dashboard.foodSales', 'Food Sales')}</p>
             <p className="text-[15px] font-black text-slate-900 leading-tight mt-0.5">
               {formatETB(foodSalesVal)}
             </p>
@@ -294,7 +308,7 @@ export default function MobileDashboardView({ data, user }) {
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-500 text-white shadow-sm mb-2">
               <LocalCafeRoundedIcon sx={{ fontSize: 17 }} />
             </div>
-            <p className="text-[11px] font-bold text-slate-700 leading-tight">Beverage Sales</p>
+            <p className="text-[11px] font-bold text-slate-700 leading-tight">{t('dashboard.beverageSales', 'Beverage Sales')}</p>
             <p className="text-[15px] font-black text-slate-900 leading-tight mt-0.5">
               {formatETB(beverageSalesVal)}
             </p>
@@ -311,7 +325,7 @@ export default function MobileDashboardView({ data, user }) {
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm mb-2">
               <PaymentsRoundedIcon sx={{ fontSize: 17 }} />
             </div>
-            <p className="text-[11px] font-bold text-slate-700 leading-tight">Cash</p>
+            <p className="text-[11px] font-bold text-slate-700 leading-tight">{t('dashboard.cashSales', 'Cash')}</p>
             <p className="text-[15px] font-black text-slate-900 leading-tight mt-0.5">
               {formatETB(cashSalesVal)}
             </p>
@@ -328,7 +342,7 @@ export default function MobileDashboardView({ data, user }) {
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm mb-2">
               <PhoneAndroidRoundedIcon sx={{ fontSize: 17 }} />
             </div>
-            <p className="text-[11px] font-bold text-slate-700 leading-tight">Mobile Money</p>
+            <p className="text-[11px] font-bold text-slate-700 leading-tight">{t('dashboard.mobileMoneySales', 'Mobile Money')}</p>
             <p className="text-[15px] font-black text-slate-900 leading-tight mt-0.5">
               {formatETB(mobileMoneySalesVal)}
             </p>
@@ -353,7 +367,7 @@ export default function MobileDashboardView({ data, user }) {
                 <AssessmentRoundedIcon sx={{ fontSize: 17 }} />
               </span>
               <span className="truncate text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                Reports
+                {t('nav.reports', 'Reports')}
               </span>
             </div>
             <ChevronRightRoundedIcon sx={{ fontSize: 16 }} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
@@ -369,7 +383,7 @@ export default function MobileDashboardView({ data, user }) {
                 <Inventory2RoundedIcon sx={{ fontSize: 17 }} />
               </span>
               <span className="truncate text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                Inventory &amp; Items
+                {t('nav.inventoryItems', 'Inventory & Items')}
               </span>
             </div>
             <ChevronRightRoundedIcon sx={{ fontSize: 16 }} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
@@ -385,7 +399,7 @@ export default function MobileDashboardView({ data, user }) {
                 <SwapHorizRoundedIcon sx={{ fontSize: 17 }} />
               </span>
               <span className="truncate text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                Stock Movements
+                {t('nav.stockMovements', 'Stock Movements')}
               </span>
             </div>
             <ChevronRightRoundedIcon sx={{ fontSize: 16 }} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
@@ -401,7 +415,7 @@ export default function MobileDashboardView({ data, user }) {
                 <MoveToInboxRoundedIcon sx={{ fontSize: 17 }} />
               </span>
               <span className="truncate text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                Stock Issue &amp; Request
+                {t('nav.stockIssueRequest', 'Stock Issue & Request')}
               </span>
             </div>
             <ChevronRightRoundedIcon sx={{ fontSize: 16 }} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
@@ -418,7 +432,7 @@ export default function MobileDashboardView({ data, user }) {
                   <SavingsRoundedIcon sx={{ fontSize: 17 }} />
                 </span>
                 <span className="truncate text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                  Finance &amp; Expenses
+                  {t('nav.financeExpenses', 'Finance & Expenses')}
                 </span>
               </div>
               <ChevronRightRoundedIcon sx={{ fontSize: 16 }} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
@@ -435,7 +449,7 @@ export default function MobileDashboardView({ data, user }) {
                 <SettingsRoundedIcon sx={{ fontSize: 17 }} />
               </span>
               <span className="truncate text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                Settings
+                {t('nav.settings', 'Settings')}
               </span>
             </div>
             <ChevronRightRoundedIcon sx={{ fontSize: 16 }} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
@@ -446,13 +460,13 @@ export default function MobileDashboardView({ data, user }) {
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-xs font-extrabold text-slate-900 tracking-tight">
-              Recent Activity
+              {t('dashboard.recentActivity', 'Recent Activity')}
             </h3>
             <Link
               to="/transactions"
               className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-0.5"
             >
-              View All <ChevronRightRoundedIcon sx={{ fontSize: 14 }} />
+              {t('dashboard.viewAll', 'View All')} <ChevronRightRoundedIcon sx={{ fontSize: 14 }} />
             </Link>
           </div>
 
