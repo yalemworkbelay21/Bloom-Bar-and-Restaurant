@@ -14,12 +14,19 @@ const {
   importProductsExcel,
   exportRecipeTemplate,
   importRecipesExcel,
+  generateProductAiImage,
+  uploadProductImageManual,
+  bulkGenerateAiImages,
+  deleteProductImage,
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(protect);
+
+// AI bulk image generation — must be before /:id
+router.post('/bulk-ai-images', authorize('admin', 'manager'), bulkGenerateAiImages);
 
 // Excel import/export — must be before /:id
 router.get('/export/excel',           authorize('admin', 'manager'), exportProductsExcel);
@@ -31,6 +38,11 @@ router.post('/import/recipes',        authorize('admin', 'manager'), upload.sing
 router.delete('/bulk',          authorize('admin', 'manager'), bulkDeleteProducts);
 router.post('/:id/restore',     authorize('admin', 'manager'), restoreProduct);
 router.delete('/:id/permanent', authorize('admin'), permanentDeleteProduct);
+
+// Product Image (Manual & AI generation)
+router.post('/:id/ai-image', authorize('admin', 'manager', 'supervisor'), generateProductAiImage);
+router.post('/:id/image',    authorize('admin', 'manager', 'supervisor'), upload.single('image'), uploadProductImageManual);
+router.delete('/:id/image',  authorize('admin', 'manager', 'supervisor'), deleteProductImage);
 
 router.get('/', getProducts);
 router.get('/:id', getProductById);

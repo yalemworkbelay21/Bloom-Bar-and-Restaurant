@@ -1,10 +1,13 @@
 const asyncHandler = require('express-async-handler');
 const XLSX = require('xlsx');
+const path = require('path');
 const Product = require('../models/Product');
 const RawMaterial = require('../models/RawMaterial');
 const Setting = require('../models/Setting');
 const { invalidateDashboardCache } = require('./dashboardController');
 const tg = require('../utils/telegramNotifier');
+const { uploadBufferToGridFS, saveLocalCache } = require('../utils/gridfs');
+const { generateAndSaveProductImage } = require('../utils/aiImageService');
 
 // ── Pricing helper — applies settings-based adjustments to recipe cost ──
 // Returns full cost breakdown:
@@ -682,5 +685,175 @@ const importRecipesExcel = asyncHandler(async (req, res) => {
   res.end();
 });
 
+// @desc   Generate AI-based food/beverage photo for product and save to GridFS
+// @route  POST /api/products/:id/ai-image
+// @access Private (Admin, Manager, Supervisor)
+const generateProductAiImage = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
 
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, bulkDeleteProducts, restoreProduct, permanentDeleteProduct, exportProductsExcel, importProductsExcel, exportRecipeTemplate, importRecipesExcel };
+  const { prompt } = req.body;
+  const result = await generateAndSaveProductImage(product, prompt);
+
+  product.imageUrl = result.imageUrl;
+  await product.save();
+  invalidateDashboardCache();
+
+  res.json({
+    success: true,
+    imageUrl: product.imageUrl,
+    prompt: result.prompt,
+    product,
+    message: `AI image successfully generated and saved for "${product.name}".`,
+  });
+});
+
+// @desc   Upload manual image file from computer for product and save to GridFS
+// @route  POST /api/products/:id/image
+// @access Private (Admin, Manager, Supervisor)
+const uploadProductImageManual = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  if (!req.file || !req.file.buffer) {
+    res.status(400);
+    throw new Error('No image file uploaded');
+  }
+
+  // Validate mime type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (!allowedTypes.includes(req.file.mimetype)) {
+    res.status(400);
+    throw new Error('Invalid image format. Supported formats: JPG, PNG, WEBP, GIF');
+  }
+
+  const ext = path.extname(req.file.originalname) || '.jpg';
+  const filename = `prod-manual-${product._id}-${Date.now()}${ext}`;
+
+  // 1. Upload buffer directly to MongoDB Atlas GridFS
+  await uploadBufferToGridFS(filename, req.file.buffer, req.file.mimetype, {
+    productId: product._id,
+    productName: product.name,
+    originalName: req.file.originalname,
+    source: 'manual-upload',
+    createdAt: new Date(),
+  });
+
+  // 2. Save optional local cache copy
+  saveLocalCache(filename, req.file.buffer);
+
+  // 3. Update product imageUrl
+  product.imageUrl = `/api/upload/${filename}`;
+  await product.save();
+  invalidateDashboardCache();
+
+  res.json({
+    success: true,
+    imageUrl: product.imageUrl,
+    product,
+    message: `Image for "${product.name}" uploaded successfully.`,
+  });
+});
+
+// @desc   Bulk generate AI images for multiple or all products without images
+// @route  POST /api/products/bulk-ai-images
+// @access Private (Admin, Manager)
+const bulkGenerateAiImages = asyncHandler(async (req, res) => {
+  const { ids, overwrite = false, limit = 100 } = req.body;
+
+  let query = { isActive: true, deletedAt: null };
+  if (Array.isArray(ids) && ids.length > 0) {
+    query._id = { $in: ids };
+  } else if (!overwrite) {
+    query.$or = [{ imageUrl: { $exists: false } }, { imageUrl: '' }, { imageUrl: null }];
+  }
+
+  const maxLimit = Math.min(Number(limit) || 100, 250);
+  const productsToProcess = await Product.find(query).limit(maxLimit);
+  if (productsToProcess.length === 0) {
+    return res.json({
+      success: true,
+      total: 0,
+      updated: 0,
+      failed: 0,
+      message: 'All matching products already have images.',
+    });
+  }
+
+  let updatedCount = 0;
+  let failedCount = 0;
+  const results = [];
+
+  for (const prod of productsToProcess) {
+    try {
+      const result = await generateAndSaveProductImage(prod);
+      prod.imageUrl = result.imageUrl;
+      await prod.save();
+      updatedCount++;
+      results.push({ id: prod._id, name: prod.name, imageUrl: result.imageUrl, status: 'success' });
+      // Brief delay between requests
+      await new Promise((r) => setTimeout(r, 120));
+    } catch (err) {
+      console.warn(`[Bulk AI Image] Failed for ${prod.name}:`, err.message);
+      failedCount++;
+      results.push({ id: prod._id, name: prod.name, error: err.message, status: 'failed' });
+    }
+  }
+
+  invalidateDashboardCache();
+
+  res.json({
+    success: true,
+    total: productsToProcess.length,
+    updated: updatedCount,
+    failed: failedCount,
+    results,
+    message: `Generated ${updatedCount} AI food images successfully (${failedCount} failed).`,
+  });
+});
+
+// @desc   Remove image from product
+// @route  DELETE /api/products/:id/image
+// @access Private (Admin, Manager, Supervisor)
+const deleteProductImage = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  product.imageUrl = '';
+  await product.save();
+  invalidateDashboardCache();
+
+  res.json({
+    success: true,
+    product,
+    message: `Image for "${product.name}" removed.`,
+  });
+});
+
+module.exports = {
+  getProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  bulkDeleteProducts,
+  restoreProduct,
+  permanentDeleteProduct,
+  exportProductsExcel,
+  importProductsExcel,
+  exportRecipeTemplate,
+  importRecipesExcel,
+  generateProductAiImage,
+  uploadProductImageManual,
+  bulkGenerateAiImages,
+  deleteProductImage,
+};
