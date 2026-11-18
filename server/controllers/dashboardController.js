@@ -4,6 +4,7 @@ const Purchase = require('../models/Purchase');
 const StockTransaction = require('../models/StockTransaction');
 const Supplier = require('../models/Supplier');
 const POSOrder = require('../models/POSOrder');
+const { computeSalesAnalytics } = require('../utils/salesAnalyticsHelper');
 
 // In-memory cache for ultra-fast instantaneous responses (TTL 25s)
 let summaryCache = {
@@ -200,6 +201,14 @@ const getSummary = asyncHandler(async (req, res) => {
     orderCount: 0,
   };
 
+  // Compute live Sales, Category Breakdown & Profit Analytics
+  let salesAnalytics = null;
+  try {
+    salesAnalytics = await computeSalesAnalytics();
+  } catch (err) {
+    console.warn('[Dashboard] computeSalesAnalytics error:', err.message);
+  }
+
   const payload = {
     totalMaterials,
     lowStockCount,
@@ -218,6 +227,7 @@ const getSummary = asyncHandler(async (req, res) => {
     lowStockItems,
     recentTransactions,
     todaySales,
+    salesAnalytics,
   };
 
   // Cache in server memory
@@ -229,5 +239,12 @@ const getSummary = asyncHandler(async (req, res) => {
   res.json(payload);
 });
 
-module.exports = { getSummary, invalidateDashboardCache };
+// Dedicated endpoint for on-demand period / custom date range queries
+const getSalesAnalytics = asyncHandler(async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const data = await computeSalesAnalytics({ startDate, endDate });
+  res.json(data);
+});
+
+module.exports = { getSummary, getSalesAnalytics, invalidateDashboardCache };
 

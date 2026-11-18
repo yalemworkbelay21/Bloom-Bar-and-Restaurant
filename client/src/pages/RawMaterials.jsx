@@ -411,19 +411,19 @@ const RawMaterials = () => {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="mb-1 block text-sm font-medium text-ink-600">Current stock</label>
-              <input type="number" step="0.01" required value={form.currentStock}
+              <input type="number" step="any" required value={form.currentStock}
                 onChange={(e) => setForm({ ...form, currentStock: Number(e.target.value) })}
                 className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm outline-none focus:border-brass-400" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-ink-600">Reorder level</label>
-              <input type="number" step="0.01" required value={form.reorderLevel}
+              <input type="number" step="any" required value={form.reorderLevel}
                 onChange={(e) => setForm({ ...form, reorderLevel: Number(e.target.value) })}
                 className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm outline-none focus:border-brass-400" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-ink-600">Unit cost</label>
-              <input type="number" step="0.01" value={form.unitCost}
+              <input type="number" step="any" value={form.unitCost}
                 onChange={(e) => setForm({ ...form, unitCost: Number(e.target.value) })}
                 className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm outline-none focus:border-brass-400" />
             </div>

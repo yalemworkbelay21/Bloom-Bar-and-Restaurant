@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { Plus, Search, Pencil, Trash2, ChefHat, X, Upload, Download, Zap } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, ChefHat, X, Upload, Download, Zap, AlertCircle } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
@@ -23,6 +23,8 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [search, setSearch] = useState('');
+  const [recipeFilter, setRecipeFilter] = useState('all'); // 'all' | 'has_recipe' | 'no_recipe'
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [selected, setSelected] = useState(new Set());
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -56,8 +58,19 @@ const Products = () => {
       .catch(() => setMaterials([]));
   }, []);
 
+  // Filtered products by search, recipe status and category
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const hasRec = Boolean(p.ingredients && p.ingredients.length > 0);
+      if (recipeFilter === 'has_recipe' && !hasRec) return false;
+      if (recipeFilter === 'no_recipe' && hasRec) return false;
+      if (categoryFilter !== 'all' && (p.category || 'General') !== categoryFilter) return false;
+      return true;
+    });
+  }, [products, recipeFilter, categoryFilter]);
+
   // ── Selection helpers ──
-  const allIds = products.map((p) => p._id);
+  const allIds = useMemo(() => filteredProducts.map((p) => p._id), [filteredProducts]);
   const allChecked = allIds.length > 0 && allIds.every((id) => selected.has(id));
   const someChecked = allIds.some((id) => selected.has(id));
 
@@ -383,8 +396,65 @@ const Products = () => {
   const recipeCost = (p) =>
     p.ingredients?.reduce((sum, ing) => sum + (ing.material?.unitCost ?? 0) * ing.quantity, 0) ?? 0;
 
+  // Global recipe counts
+  const globalRecipeCounts = useMemo(() => {
+    let hasRecipe = 0;
+    let noRecipe = 0;
+    products.forEach((p) => {
+      if (p.ingredients && p.ingredients.length > 0) {
+        hasRecipe++;
+      } else {
+        noRecipe++;
+      }
+    });
+    return {
+      all: products.length,
+      hasRecipe,
+      noRecipe,
+    };
+  }, [products]);
+
+  // Contextual counts (scoped to categoryFilter if selected)
+  const recipeCounts = useMemo(() => {
+    if (categoryFilter === 'all') return globalRecipeCounts;
+    let hasRecipe = 0;
+    let noRecipe = 0;
+    let totalInCat = 0;
+    products.forEach((p) => {
+      const cat = p.category && p.category.trim() ? p.category.trim() : 'General';
+      if (cat === categoryFilter) {
+        totalInCat++;
+        if (p.ingredients && p.ingredients.length > 0) {
+          hasRecipe++;
+        } else {
+          noRecipe++;
+        }
+      }
+    });
+    return {
+      all: totalInCat,
+      hasRecipe,
+      noRecipe,
+    };
+  }, [products, categoryFilter, globalRecipeCounts]);
+
+  // Unique categories list with item counts
+  const { uniqueCategories, categoryCountsMap } = useMemo(() => {
+    const countsMap = {};
+    const set = new Set();
+    products.forEach((p) => {
+      const cat = p.category && p.category.trim() ? p.category.trim() : 'General';
+      set.add(cat);
+      countsMap[cat] = (countsMap[cat] || 0) + 1;
+    });
+    return {
+      uniqueCategories: Array.from(set).sort(),
+      categoryCountsMap: countsMap,
+    };
+  }, [products]);
+
   const exportData = useMemo(() => {
-    return products.map(p => ({
+    return filteredProducts.map(p => ({
       'Code': p.code || '—',
       'Product Name': p.name,
       'Department': p.parentCategory || 'FOOD',
@@ -394,15 +464,15 @@ const Products = () => {
       'Ingredients Count': p.ingredients?.length || 0,
       'Active': p.isActive !== false ? 'Yes' : 'No',
     }));
-  }, [products]);
+  }, [filteredProducts]);
 
-  // Paginated slice for the table
-  const pagedProducts = React.useMemo(
-    () => products.slice((page - 1) * pageSize, page * pageSize),
-    [products, page, pageSize]
+  // Paginated slice for the table based on filtered products
+  const pagedProducts = useMemo(
+    () => filteredProducts.slice((page - 1) * pageSize, page * pageSize),
+    [filteredProducts, page, pageSize]
   );
-  // Reset to page 1 on search
-  React.useEffect(() => { setPage(1); }, [search]);
+  // Reset to page 1 on search, recipe filter, or category filter
+  useEffect(() => { setPage(1); }, [search, recipeFilter, categoryFilter]);
   const pdfColumns = [
     { header: 'Code', accessor: 'Code' },
     { header: 'Product Name', accessor: 'Product Name' },
@@ -552,6 +622,106 @@ const Products = () => {
         </div>
       )}
 
+      {/* ── Quick Recipe & Category Filter Badges ── */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-blue-200/80 bg-white p-2.5 shadow-2xs">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          {/* All Products */}
+          <button
+            type="button"
+            onClick={() => setRecipeFilter('all')}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${recipeFilter === 'all'
+              ? 'bg-blue-900 text-white shadow-xs'
+              : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+          >
+            <span>All Products</span>
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${recipeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+              {recipeCounts.all}
+            </span>
+          </button>
+
+          {/* Has Recipe */}
+          <button
+            type="button"
+            onClick={() => setRecipeFilter('has_recipe')}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${recipeFilter === 'has_recipe'
+              ? 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-400/40'
+              : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100'
+              }`}
+          >
+            <ChefHat size={13} className={recipeFilter === 'has_recipe' ? 'text-white' : 'text-emerald-600'} />
+            <span>Has Recipe</span>
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${recipeFilter === 'has_recipe' ? 'bg-white/25 text-white' : 'bg-emerald-200 text-emerald-900'
+              }`}>
+              {recipeCounts.hasRecipe}
+            </span>
+          </button>
+
+          {/* No Recipe */}
+          <button
+            type="button"
+            onClick={() => setRecipeFilter('no_recipe')}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${recipeFilter === 'no_recipe'
+              ? 'bg-amber-500 text-white shadow-xs ring-2 ring-amber-400/40'
+              : 'bg-amber-50 text-amber-800 border border-amber-200/80 hover:bg-amber-100'
+              }`}
+          >
+            <AlertCircle size={13} className={recipeFilter === 'no_recipe' ? 'text-white' : 'text-amber-600'} />
+            <span>No Recipe</span>
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${recipeFilter === 'no_recipe' ? 'bg-white/25 text-white' : 'bg-amber-200 text-amber-900'
+              }`}>
+              {recipeCounts.noRecipe}
+            </span>
+          </button>
+        </div>
+
+        {/* Quick Category Filter */}
+        {uniqueCategories.length > 0 && (
+          <div className="flex items-center gap-1.5 text-xs text-ink-600 self-end sm:self-auto">
+            <span className="font-medium text-ink-400">Category:</span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="rounded-lg border border-ink-200 bg-white px-2.5 py-1 text-xs font-medium text-ink-700 outline-none focus:border-blue-500 shadow-2xs"
+            >
+              <option value="all">All Categories ({products.length})</option>
+              {uniqueCategories.map((c) => (
+                <option key={c} value={c}>{c} ({categoryCountsMap[c] || 0})</option>
+              ))}
+            </select>
+            {(recipeFilter !== 'all' || categoryFilter !== 'all') && (
+              <button
+                type="button"
+                onClick={() => { setRecipeFilter('all'); setCategoryFilter('all'); }}
+                className="text-xs text-ink-400 hover:text-ink-700 underline pl-1"
+                title="Reset filters"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Active Filter Helper Banner when Category is Narrowed Down */}
+      {categoryFilter !== 'all' && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-blue-50/90 border border-blue-200 px-3.5 py-2 text-xs text-blue-900 shadow-2xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-blue-700">Category:</span>
+            <span className="rounded-md bg-blue-100 px-2 py-0.5 text-blue-950 font-bold">{categoryFilter}</span>
+            <span className="text-blue-600 font-medium">({filteredProducts.length} of {categoryCountsMap[categoryFilter] || 0} items)</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCategoryFilter('all')}
+            className="text-xs text-blue-700 hover:text-blue-900 underline font-semibold"
+          >
+            Show All Categories
+          </button>
+        </div>
+      )}
+
       {/* ── Table with inline checkboxes ── */}
       <div className="overflow-hidden rounded-xl border border-blue-200/70 bg-white shadow-soft">
         <div className="overflow-x-auto">
@@ -644,7 +814,7 @@ const Products = () => {
         <Pagination
           page={page}
           pageSize={pageSize}
-          total={products.length}
+          total={filteredProducts.length}
           onPage={setPage}
           onPageSize={(s) => { setPageSize(s); setPage(1); }}
         />
@@ -700,7 +870,7 @@ const Products = () => {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-ink-600">Selling price (ETB)</label>
-              <input type="number" step="0.01" min="0" value={form.sellingPrice}
+              <input type="number" step="any" min="0" value={form.sellingPrice}
                 onChange={(e) => setForm({ ...form, sellingPrice: Number(e.target.value) })}
                 className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm outline-none focus:border-blue-500" />
             </div>
@@ -738,7 +908,7 @@ const Products = () => {
                     onChange={(val) => updateIngredient(idx, 'material', val)}
                   />
                   <div className="flex items-center gap-1">
-                    <input type="number" step="0.001" min="0" required value={ing.quantity}
+                    <input type="number" step="any" min="0" required value={ing.quantity}
                       onChange={(e) => updateIngredient(idx, 'quantity', Number(e.target.value))}
                       className="w-24 rounded-lg border border-ink-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
                       placeholder="Qty" />

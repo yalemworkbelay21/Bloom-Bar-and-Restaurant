@@ -23,6 +23,7 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
+import SalesAnalyticsSection from './SalesAnalyticsSection';
 
 /**
  * Format ETB Currency
@@ -73,9 +74,10 @@ export default function MobileDashboardView({ data, user }) {
   });
 
   // Calculate live or fallback sales figures
-  const totalSalesVal = data?.todaySales?.total || 77889.96;
-  const foodSalesVal = data?.todaySales?.food || 69161.69;
-  const beverageSalesVal = data?.todaySales?.beverage || 5728.27;
+  const dailyAnalytics = data?.salesAnalytics?.daily;
+  const totalSalesVal = data?.todaySales?.total || dailyAnalytics?.totalRevenue || 77889.96;
+  const foodSalesVal = data?.todaySales?.food || dailyAnalytics?.parentList?.find(p => p.description === 'Food')?.total || 69161.69;
+  const beverageSalesVal = data?.todaySales?.beverage || dailyAnalytics?.parentList?.find(p => p.description === 'Beverage')?.total || 5728.27;
   const cashSalesVal = data?.todaySales?.cash || 59465.40;
   const mobileMoneySalesVal = data?.todaySales?.mobileMoney || 22430.02;
 
@@ -319,7 +321,6 @@ export default function MobileDashboardView({ data, user }) {
               </span>
             </div>
           </div>
-
           {/* Card 3: Cash */}
           <div className="rounded-2xl border border-amber-100/80 bg-amber-50/50 p-3 shadow-xs">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm mb-2">
@@ -506,6 +507,11 @@ export default function MobileDashboardView({ data, user }) {
               </Link>
             ))}
           </div>
+        </div>
+
+        {/* ── Tri-Source Sales, Category Breakdown & Profit Analytics Section ── */}
+        <div className="mt-5">
+          <SalesAnalyticsSection salesAnalytics={data?.salesAnalytics} />
         </div>
       </div>
     </div>

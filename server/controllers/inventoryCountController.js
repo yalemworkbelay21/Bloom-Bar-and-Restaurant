@@ -413,23 +413,23 @@ exports.updateLines = asyncHandler(async (req, res) => {
   doc.netVarianceValue = doc.positiveVariance + doc.negativeVariance;
 
   // ── Synchronize live RawMaterial.currentStock with the physical counts entered ──
-  const bulkMatUpdates = [];
+  let updatedAnyStock = false;
   for (const upd of updates) {
     if (upd.physicalCount !== undefined && upd.physicalCount !== null && upd.physicalCount !== '') {
       const targetStock = Number(upd.physicalCount);
       if (!isNaN(targetStock) && targetStock >= 0) {
-        bulkMatUpdates.push({
-          updateOne: {
-            filter: { _id: upd.material },
-            update: { $set: { currentStock: targetStock } },
-          },
-        });
+        // Direct Mongoose findById to guarantee proper ObjectId casting
+        const mat = await RawMaterial.findById(upd.material);
+        if (mat) {
+          mat.currentStock = targetStock;
+          await mat.save();
+          updatedAnyStock = true;
+        }
       }
     }
   }
 
-  if (bulkMatUpdates.length > 0) {
-    await RawMaterial.bulkWrite(bulkMatUpdates);
+  if (updatedAnyStock) {
     doc.stockApplied = true;
     doc.stockAppliedAt = new Date();
     doc.stockAppliedBy = req.user?._id;
@@ -441,7 +441,7 @@ exports.updateLines = asyncHandler(async (req, res) => {
   }
 
   await doc.save();
-  res.json({ count: doc, stockUpdated: bulkMatUpdates.length > 0 });
+  res.json({ count: doc, stockUpdated: updatedAnyStock });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
