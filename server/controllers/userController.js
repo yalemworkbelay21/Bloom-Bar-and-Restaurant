@@ -37,6 +37,8 @@ const updateUser = asyncHandler(async (req, res) => {
   user.isActive = req.body.isActive ?? user.isActive;
   user.phone = req.body.phone ?? user.phone;
   user.telegramChatId = req.body.telegramChatId ?? user.telegramChatId;
+  if (req.body.photoUrl !== undefined) user.photoUrl = req.body.photoUrl;
+  if (req.body.employeeId !== undefined) user.employeeId = req.body.employeeId;
   if (req.body.password) user.password = req.body.password;
 
   const updated = await user.save();
@@ -146,6 +148,8 @@ const updateUser = asyncHandler(async (req, res) => {
     isActive: updated.isActive,
     phone: updated.phone || '',
     telegramChatId: updated.telegramChatId || '',
+    photoUrl: updated.photoUrl || '',
+    employeeId: updated.employeeId || '',
   });
 });
 

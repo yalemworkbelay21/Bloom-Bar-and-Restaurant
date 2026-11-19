@@ -2,13 +2,16 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Plus, Search, Pencil, Trash2, X, RefreshCw,
   UserCheck, UserX, Clock, Users, Building2, Phone, Mail, Calendar,
-  ChevronDown,
+  ChevronDown, Award,
 } from 'lucide-react';
 import api from '../api/axios';
 import Modal from '../components/ui/Modal';
 import WorkflowBadge from '../components/ui/WorkflowBadge';
 import ExportDropdown from '../components/ui/ExportDropdown';
 import Pagination from '../components/ui/Pagination';
+import PhotoUpload3x4 from '../components/employee/PhotoUpload3x4';
+import EmployeeIdBadgeModal from '../components/employee/EmployeeIdBadgeModal';
+import { normalizeFileUrl } from '../utils/fileUrl';
 import { useAuth } from '../context/AuthContext';
 
 const DEPARTMENTS = [
@@ -27,6 +30,7 @@ const emptyForm = {
   employeeId: '', firstName: '', lastName: '',
   department: 'Waiter', position: '', phone: '',
   email: '', hireDate: '', status: 'active', notes: '',
+  photoUrl: '',
 };
 
 const fmt = (d) => d ? new Date(d).toLocaleDateString('en-US', { dateStyle: 'medium' }) : '—';
@@ -54,6 +58,11 @@ export default function Employees() {
 
   const [deleteId,   setDeleteId]   = useState(null);
   const [deleting,   setDeleting]   = useState(false);
+
+  // Corporate Staff ID Badge Modal
+  const [badgeEmployee,  setBadgeEmployee]  = useState(null);
+  const [badgeModalOpen, setBadgeModalOpen] = useState(false);
+  const [isNewlyCreated, setIsNewlyCreated] = useState(false);
 
   /* ── load ── */
   const load = useCallback(async () => {
@@ -115,6 +124,7 @@ export default function Employees() {
       hireDate:   emp.hireDate   ? new Date(emp.hireDate).toISOString().slice(0, 10) : '',
       status:     emp.status     || 'active',
       notes:      emp.notes      || '',
+      photoUrl:   emp.photoUrl   || '',
     });
     setFormErr('');
     setModalOpen(true);
@@ -124,16 +134,25 @@ export default function Employees() {
     e.preventDefault();
     setSaving(true); setFormErr('');
     try {
+      let savedEmp = null;
       if (editing) {
-        await api.put(`/employees/${editing._id}`, form);
+        const res = await api.put(`/employees/${editing._id}`, form);
+        savedEmp = res.data;
       } else {
-        await api.post('/employees', form);
+        const res = await api.post('/employees', form);
+        savedEmp = res.data;
       }
       setModalOpen(false);
       load();
       try {
         localStorage.setItem('bloom_employees_updated', Date.now().toString());
       } catch (_) { }
+
+      if (!editing && savedEmp) {
+        setBadgeEmployee(savedEmp);
+        setIsNewlyCreated(true);
+        setBadgeModalOpen(true);
+      }
     } catch (err) {
       setFormErr(err.response?.data?.message || 'Failed to save.');
     } finally { setSaving(false); }
@@ -290,9 +309,19 @@ export default function Employees() {
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 whitespace-nowrap">{emp.employeeId || '—'}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold shrink-0">
-                          {emp.firstName?.[0]}{emp.lastName?.[0]}
-                        </div>
+                        {emp.photoUrl ? (
+                          <div className="h-9 w-7 rounded-md overflow-hidden border border-blue-200 shadow-2xs shrink-0 bg-slate-100">
+                            <img
+                              src={normalizeFileUrl(emp.photoUrl)}
+                              alt={`${emp.firstName} ${emp.lastName}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold shrink-0">
+                            {emp.firstName?.[0]}{emp.lastName?.[0]}
+                          </div>
+                        )}
                         <div>
                           <p className="font-semibold text-ink-900 text-xs">{emp.firstName} {emp.lastName}</p>
                           {emp.email && <p className="text-[10px] text-ink-400">{emp.email}</p>}
@@ -313,7 +342,19 @@ export default function Employees() {
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBadgeEmployee(emp);
+                            setIsNewlyCreated(false);
+                            setBadgeModalOpen(true);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-2 py-1 text-xs font-semibold text-white transition shadow-2xs"
+                          title="View & Print Staff ID Badge"
+                        >
+                          <Award size={11} /> ID Badge
+                        </button>
                         {canEdit && (
                           <button onClick={() => openEdit(emp)}
                             className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2 py-1 text-xs font-semibold text-white transition">
@@ -343,6 +384,9 @@ export default function Employees() {
         title={editing ? 'Edit Employee' : 'Add New Employee'}
         width="max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* 3×4 Passport Photo */}
+          <PhotoUpload3x4 photoUrl={form.photoUrl} onPhotoChange={url => f('photoUrl', url)} />
 
           {/* Row 1: First / Last name */}
           <div className="grid grid-cols-2 gap-3">
@@ -474,6 +518,15 @@ export default function Employees() {
           </div>
         </div>
       </Modal>
+
+      {/* ══ Corporate Staff ID Badge Modal ══ */}
+      <EmployeeIdBadgeModal
+        open={badgeModalOpen}
+        onClose={() => setBadgeModalOpen(false)}
+        employee={badgeEmployee}
+        isNewlyCreated={isNewlyCreated}
+        onEdit={(emp) => openEdit(emp)}
+      />
 
     </div>
   );

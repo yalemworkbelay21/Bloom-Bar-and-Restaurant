@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, trim: true, default: '' },
     telegramChatId: { type: String, trim: true, default: '' },
     avatar: { type: String, default: '' },
+    photoUrl: { type: String, trim: true, default: '' }, // 3×4 passport photo
+    employeeId: { type: String, trim: true, default: '' }, // e.g. EMP-0012
     isActive: { type: Boolean, default: true },
     // OTP fields for 2-step login
     otpHash:   { type: String, default: null },

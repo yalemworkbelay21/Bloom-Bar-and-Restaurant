@@ -77,6 +77,10 @@ router.post('/', protect, upload.array('files', 5), async (req, res) => {
 router.get('/:filename', async (req, res) => {
   const { filename } = req.params;
 
+  // Allow cross-origin access for image tags, prints, and badges without canvas-taint
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
   try {
     // 1. Try finding in MongoDB GridFS first (primary permanent cloud storage)
     const fileDoc = await findFileInGridFS(filename);

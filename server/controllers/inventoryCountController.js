@@ -3,7 +3,6 @@ const InventoryCount = require('../models/InventoryCount');
 const RawMaterial = require('../models/RawMaterial');
 const StockTransaction = require('../models/StockTransaction');
 const tg = require('../utils/telegramNotifier');
-
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -21,10 +20,8 @@ async function computeWAC(materialId, upToDate, fallbackUnitCost = 0) {
         { type: 'in' },
       ],
     }).sort({ date: 1 });
-
     let totalQty = 0;
     let totalCost = 0;
-
     for (const tx of txns) {
       if (tx.items && tx.items.length > 0) {
         const line = tx.items.find((i) => String(i.material) === String(materialId));
@@ -204,17 +201,14 @@ exports.getCount = asyncHandler(async (req, res) => {
 async function syncCountDoc(doc) {
   const periodStart = new Date(doc.periodYear, doc.periodMonth - 1, 1);
   const periodEnd = new Date(doc.periodYear, doc.periodMonth, 0, 23, 59, 59, 999);
-
   const materials = await RawMaterial.find({
     storeLocation: doc.storeLocation,
     isActive: true,
   }).lean();
-
   const materialMap = {};
   materials.forEach((m) => {
     materialMap[m._id.toString()] = m;
   });
-
   let modified = false;
 
   for (const line of doc.lines) {
@@ -381,9 +375,7 @@ exports.updateLines = asyncHandler(async (req, res) => {
   if (doc.status === 'approved' || doc.status === 'closed') {
     return res.status(400).json({ message: 'Cannot edit an approved or closed count' });
   }
-
   const updates = req.body.lines || [];
-
   for (const upd of updates) {
     const line = doc.lines.find((l) => String(l.material) === String(upd.material));
     if (!line) continue;
@@ -437,7 +429,7 @@ exports.updateLines = asyncHandler(async (req, res) => {
     try {
       const { invalidateDashboardCache } = require('./dashboardController');
       invalidateDashboardCache();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   await doc.save();

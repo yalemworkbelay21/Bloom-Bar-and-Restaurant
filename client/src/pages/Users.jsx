@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Users as UsersIcon, Phone, Send, Pencil, X, Trash2, BellOff } from 'lucide-react';
+import { Plus, Users as UsersIcon, Phone, Send, Pencil, X, Trash2, BellOff, Award } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import Pagination from '../components/ui/Pagination';
+import PhotoUpload3x4 from '../components/employee/PhotoUpload3x4';
+import EmployeeIdBadgeModal from '../components/employee/EmployeeIdBadgeModal';
+import { normalizeFileUrl } from '../utils/fileUrl';
 
 const emptyForm = {
   name: '', email: '', password: '', role: 'storekeeper',
-  phone: '', telegramChatId: '',
+  phone: '', telegramChatId: '', photoUrl: '', employeeId: '',
 };
 
 const roleColor = {
@@ -43,6 +46,11 @@ const Users = () => {
   const [page,       setPage]       = useState(1);
   const [pageSize,   setPageSize]   = useState(10);
 
+  // Corporate Staff ID Badge Modal
+  const [badgeStaff,     setBadgeStaff]     = useState(null);
+  const [badgeModalOpen, setBadgeModalOpen] = useState(false);
+  const [isNewlyCreated, setIsNewlyCreated] = useState(false);
+
   const load = () => api.get('/users')
     .then((res) => {
       let list = Array.isArray(res.data) ? res.data : [];
@@ -72,6 +80,8 @@ const Users = () => {
       role:           u.role || 'storekeeper',
       phone:          u.phone || '',
       telegramChatId: u.telegramChatId || '',
+      photoUrl:       u.photoUrl || '',
+      employeeId:     u.employeeId || '',
     });
     setError('');
     setModalOpen(true);
@@ -81,21 +91,32 @@ const Users = () => {
     e.preventDefault();
     setError(''); setSaving(true);
     try {
+      let savedUser = null;
       if (editUser) {
         const payload = {
           name:           form.name,
           role:           form.role,
           phone:          form.phone,
           telegramChatId: form.telegramChatId,
+          photoUrl:       form.photoUrl,
+          employeeId:     form.employeeId,
         };
         if (form.password) payload.password = form.password;
-        await api.put(`/users/${editUser._id}`, payload);
+        const res = await api.put(`/users/${editUser._id}`, payload);
+        savedUser = res.data;
       } else {
-        await api.post('/auth/register', form);
+        const res = await api.post('/auth/register', form);
+        savedUser = res.data;
       }
       setModalOpen(false);
       setForm(emptyForm);
       load();
+
+      if (!editUser && savedUser) {
+        setBadgeStaff(savedUser);
+        setIsNewlyCreated(true);
+        setBadgeModalOpen(true);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Could not save account.');
     } finally { setSaving(false); }
@@ -166,7 +187,27 @@ const Users = () => {
               )}
               {paginated.map(u => (
                 <tr key={u._id} className="hover:bg-blue-50/20 transition-colors" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td className="px-4 py-3 font-semibold text-ink-900 whitespace-nowrap">{u.name}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-2.5">
+                      {u.photoUrl ? (
+                        <div className="h-9 w-7 rounded-md overflow-hidden border border-blue-200 shadow-2xs shrink-0 bg-slate-100">
+                          <img
+                            src={normalizeFileUrl(u.photoUrl)}
+                            alt={u.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold shrink-0">
+                          {u.name?.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-ink-900 text-xs">{u.name}</p>
+                        {u.employeeId && <p className="text-[10px] font-mono text-blue-600">{u.employeeId}</p>}
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-xs text-ink-500 whitespace-nowrap">{u.email}</td>
                   <td className="px-4 py-3 text-xs text-ink-500 whitespace-nowrap">
                     {u.phone ? (
@@ -196,6 +237,18 @@ const Users = () => {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBadgeStaff(u);
+                          setIsNewlyCreated(false);
+                          setBadgeModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-2 py-1 text-xs font-semibold text-white transition shadow-2xs"
+                        title="View & Print Staff ID Badge"
+                      >
+                        <Award size={11} /> ID Badge
+                      </button>
                       <button onClick={() => openEdit(u)}
                         className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 px-2 py-1 text-xs font-semibold text-white transition">
                         <Pencil size={11} /> Edit
@@ -236,12 +289,25 @@ const Users = () => {
             </div>
           )}
 
-          {/* Name */}
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-ink-700">Full Name *</label>
-            <input required value={form.name} onChange={e => f('name', e.target.value)}
-              placeholder="e.g. Abebe Girma"
-              className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm outline-none focus:border-blue-500" />
+          {/* 3×4 Passport Photo */}
+          <PhotoUpload3x4 photoUrl={form.photoUrl} onPhotoChange={url => f('photoUrl', url)} />
+
+          {/* Name & Staff ID */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-ink-700">Full Name *</label>
+              <input required value={form.name} onChange={e => f('name', e.target.value)}
+                placeholder="e.g. Abebe Girma"
+                className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm outline-none focus:border-blue-500" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-ink-700">
+                Staff ID <span className="font-normal text-ink-400">(e.g. EMP-0012)</span>
+              </label>
+              <input value={form.employeeId} onChange={e => f('employeeId', e.target.value)}
+                placeholder="EMP-0012"
+                className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm outline-none focus:border-blue-500 font-mono" />
+            </div>
           </div>
 
           {/* Email */}
@@ -319,6 +385,14 @@ const Users = () => {
           </div>
         </form>
       </Modal>
+      {/* ══ Corporate Staff ID Badge Modal ══ */}
+      <EmployeeIdBadgeModal
+        open={badgeModalOpen}
+        onClose={() => setBadgeModalOpen(false)}
+        employee={badgeStaff}
+        isNewlyCreated={isNewlyCreated}
+        onEdit={(u) => openEdit(u)}
+      />
     </div>
   );
 };
